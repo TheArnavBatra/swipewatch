@@ -32,7 +32,7 @@ async function discover(provider, lang, page) {
     with_watch_monetization_types: 'flatrate',
     with_original_language: lang,
     sort_by: 'popularity.desc',
-    'vote_count.gte': '300',
+    'vote_count.gte': '100',
     include_adult: 'false',
     page: String(page),
   })
