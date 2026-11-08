@@ -3,6 +3,12 @@ import { serviceName } from '../lib/services'
 import { hueOf } from '../lib/storage'
 
 const THRESHOLD = 100
+const EXIT = {
+  yes: 'translate(520px, 40px) rotate(24deg)',
+  no: 'translate(-520px, 40px) rotate(-24deg)',
+  watched: 'translate(0, -560px) scale(0.9)',
+  never: 'translate(0, 560px) scale(0.85) rotate(-6deg)',
+}
 
 export default function SwipeCard({ item, depth, exit, onDecide }) {
   const start = useRef(null)
@@ -12,8 +18,7 @@ export default function SwipeCard({ item, depth, exit, onDecide }) {
   let transform = `translateY(${depth * 10}px) scale(${1 - depth * 0.04})`
   let opacity = depth > 1 ? 0.6 : 1
   if (isTop && exit) {
-    const sign = exit === 'yes' ? 1 : -1
-    transform = `translate(${sign * 520}px, 40px) rotate(${sign * 24}deg)`
+    transform = EXIT[exit]
     opacity = 0
   } else if (isTop && (drag.x || drag.y)) {
     transform = `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x / 18}deg)`
@@ -69,6 +74,8 @@ export default function SwipeCard({ item, depth, exit, onDecide }) {
       </div>
       <span className="stamp yes" style={{ opacity: yesOpacity }}>WATCH</span>
       <span className="stamp no" style={{ opacity: noOpacity }}>SKIP</span>
+      <span className="stamp seen" style={{ opacity: exit === 'watched' ? 1 : 0 }}>SEEN</span>
+      <span className="stamp hide" style={{ opacity: exit === 'never' ? 1 : 0 }}>HIDDEN</span>
     </div>
   )
 }
