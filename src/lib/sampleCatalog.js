@@ -1,0 +1,37 @@
+// Offline fallback used when no TMDB key is configured. Availability is illustrative.
+const T = (title, year, ind, svc, genre, blurb) => ({
+  id: title, title, year, ind, svcs: [svc], genre, blurb, poster: null, rating: null,
+})
+
+export const SAMPLE = [
+  T('3 Idiots', 2009, 'bollywood', 'netflix', 'Comedy-drama', 'Three engineering students, one rule-breaking friend, and a lesson about chasing excellence.'),
+  T('Dangal', 2016, 'bollywood', 'netflix', 'Sports', "A former wrestler trains his daughters to take on the country's best."),
+  T('Gully Boy', 2019, 'bollywood', 'prime', 'Music drama', 'A Mumbai slum kid finds his voice in the underground rap scene.'),
+  T('Andhadhun', 2018, 'bollywood', 'netflix', 'Thriller', 'A blind pianist who may not be blind witnesses a murder.'),
+  T('Queen', 2013, 'bollywood', 'netflix', 'Comedy-drama', 'Dumped before her wedding, Rani takes her honeymoon to Paris and Amsterdam alone.'),
+  T('Zindagi Na Milegi Dobara', 2011, 'bollywood', 'prime', 'Road trip', 'Three friends, one bachelor trip across Spain, and a list of fears to face.'),
+  T('Kahaani', 2012, 'bollywood', 'prime', 'Mystery', 'A pregnant woman searches Kolkata for her missing husband.'),
+  T('Dil Chahta Hai', 2001, 'bollywood', 'prime', 'Coming of age', 'Three friends in Goa drift apart and find their way back.'),
+  T('Lagaan', 2001, 'bollywood', 'hotstar', 'Sports epic', 'Villagers stake their taxes on a cricket match against the British.'),
+  T('Swades', 2004, 'bollywood', 'sony', 'Drama', 'A NASA scientist returns home and meets the village he left behind.'),
+  T('Piku', 2015, 'bollywood', 'zee5', 'Comedy-drama', 'A road trip to Kolkata with a stubborn father and his exasperated daughter.'),
+  T('Barfi!', 2012, 'bollywood', 'hotstar', 'Romance', 'A deaf and mute man charms two very different women.'),
+  T('Tumbbad', 2018, 'bollywood', 'prime', 'Horror fantasy', 'A greedy family secret awakens a forgotten god.'),
+  T('Haider', 2014, 'bollywood', 'zee5', 'Crime drama', 'Hamlet retold in conflict-era Kashmir.'),
+  T('Taare Zameen Par', 2007, 'bollywood', 'zee5', 'Drama', 'A teacher discovers why a quiet boy struggles in school.'),
+  T('Inception', 2010, 'hollywood', 'netflix', 'Sci-fi thriller', 'A thief enters dreams to plant an idea.'),
+  T('The Dark Knight', 2008, 'hollywood', 'hotstar', 'Superhero crime', "Batman faces the Joker in a battle for Gotham's soul."),
+  T('Knives Out', 2019, 'hollywood', 'netflix', 'Whodunit', 'A detective unpicks a wealthy family after the patriarch dies.'),
+  T('Spider-Man: Into the Spider-Verse', 2018, 'hollywood', 'netflix', 'Animation', 'Miles Morales meets Spider-People from other universes.'),
+  T('Interstellar', 2014, 'hollywood', 'prime', 'Sci-fi', 'Astronauts travel through a wormhole to save humanity.'),
+  T('Everything Everywhere All at Once', 2022, 'hollywood', 'prime', 'Sci-fi comedy', 'A tired laundromat owner jumps across universes to stop a threat.'),
+  T('La La Land', 2016, 'hollywood', 'prime', 'Musical', 'An actress and a jazz pianist chase dreams in Los Angeles.'),
+  T('The Grand Budapest Hotel', 2014, 'hollywood', 'hotstar', 'Comedy', 'A legendary concierge and his lobby boy get tangled in a theft.'),
+  T('Moana', 2016, 'hollywood', 'hotstar', 'Animation', "A chief's daughter sails beyond the reef to save her island."),
+  T('Mad Max: Fury Road', 2015, 'hollywood', 'hotstar', 'Action', 'A desert chase across the wasteland, almost without pause.'),
+  T('The Social Network', 2010, 'hollywood', 'netflix', 'Drama', 'The founding of Facebook, and the lawsuits that followed.'),
+  T('Get Out', 2017, 'hollywood', 'prime', 'Horror', "A visit to his girlfriend's family turns deeply wrong."),
+  T('Dune', 2021, 'hollywood', 'sony', 'Sci-fi epic', 'A young heir takes on a desert planet and its spice.'),
+  T('The Prestige', 2006, 'hollywood', 'sony', 'Mystery', 'Two rival magicians escalate a feud over one trick.'),
+  T('Paddington 2', 2017, 'hollywood', 'sony', 'Family comedy', "A bear is jailed for a theft he didn't commit."),
+]
