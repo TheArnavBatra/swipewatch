@@ -1,11 +1,15 @@
 import { INDUSTRIES, SERVICES } from './services'
 import { SAMPLE } from './sampleCatalog'
 import { GENRES } from './genres'
+import { load, save } from './storage'
 
 const KEY = import.meta.env.VITE_TMDB_KEY
 const REGION = import.meta.env.VITE_TMDB_REGION || 'IN'
 const API = 'https://api.themoviedb.org/3'
 const MAX_PAGES = 25
+// Pages are visited in random order, with the better-ranked pages more likely to come up first.
+const FIRST_PAGE_RANGE = 3
+const PAGE_DECAY = 6
 
 export const hasTmdb = Boolean(KEY)
 export const posterUrl = (path) => (path ? `https://image.tmdb.org/t/p/w500${path}` : null)
@@ -53,6 +57,35 @@ function toTitle(m, provider, lang) {
   }
 }
 
+const newCursor = (c, genres) => ({ ...c, genres, visited: new Set(), totalPages: null })
+const pageLimit = (c) => Math.min(c.totalPages ?? MAX_PAGES, MAX_PAGES)
+const isOpen = (c) => c.totalPages === null || c.visited.size < pageLimit(c)
+
+// The first page is a random one near the top, since the page count is not known yet. It is never
+// the same page this list opened on last time, so two sessions in a row do not start alike.
+function firstPage(c) {
+  const key = `${c.provider.id}:${c.lang}:${c.genres ?? ''}`
+  const seen = load('rp.firstPages', {})
+  const options = Array.from({ length: FIRST_PAGE_RANGE }, (_, i) => i + 1).filter((p) => p !== seen[key])
+  const page = options[Math.floor(Math.random() * options.length)]
+  save('rp.firstPages', { ...seen, [key]: page })
+  return page
+}
+
+// After that, an unvisited page is drawn with a weight that falls off with its rank.
+function nextPage(c) {
+  if (c.totalPages === null) return firstPage(c)
+  const pages = []
+  for (let p = 1; p <= pageLimit(c); p++) if (!c.visited.has(p)) pages.push(p)
+  const weights = pages.map((p) => Math.exp(-(p - 1) / PAGE_DECAY))
+  let r = Math.random() * weights.reduce((a, b) => a + b, 0)
+  for (let i = 0; i < pages.length; i++) {
+    r -= weights[i]
+    if (r <= 0) return pages[i]
+  }
+  return pages[pages.length - 1]
+}
+
 // A feed hands out titles in batches. Each next() call pulls one more page per service and
 // language, so the deck can keep refilling until TMDB has nothing left. A title is only ever
 // returned once, and a film found on two services in the same batch shows both.
@@ -69,25 +102,29 @@ export function createFeed({ services, ind, exclude = [], minVotes = 100, favori
   const langs = ind === 'both' ? ['hi', 'en'] : [INDUSTRIES.find((i) => i.id === ind).lang]
   const base = SERVICES.filter((s) => services.includes(s.id))
     .flatMap((provider) => langs.map((lang) => ({ provider, lang })))
-  const cursors = base.map((c) => ({ ...c, page: 1, totalPages: Infinity, genres: null }))
+  const cursors = base.map((c) => newCursor(c, null))
   const biasedFor = new Set()
-  const open = (c) => c.page <= Math.min(c.totalPages, MAX_PAGES)
 
   return {
-    hasMore: () => cursors.some(open),
+    hasMore: () => cursors.some(isOpen),
     async next() {
       // Once the model has a clear favorite genre, also pull titles in that genre. A new set of
       // favorites opens a fresh set of pages, and the older ones stay open.
       const favorites = favoriteGenres().join('|')
       if (favorites && !biasedFor.has(favorites)) {
         biasedFor.add(favorites)
-        cursors.push(...base.map((c) => ({ ...c, page: 1, totalPages: Infinity, genres: favorites })))
+        cursors.push(...base.map((c) => newCursor(c, favorites)))
       }
-      const batches = await Promise.all(cursors.filter(open).map(async (c) => {
-        const { results, totalPages } = await discover(c.provider, c.lang, c.page, minVotes, c.genres)
-        c.page += 1
-        c.totalPages = totalPages
-        return results.map((m) => ({ m, provider: c.provider, lang: c.lang }))
+      const batches = await Promise.all(cursors.filter(isOpen).map(async (c) => {
+        // A random first page can be past the end for a small catalog, so try again with the real count.
+        for (let attempt = 0; attempt < 3 && isOpen(c); attempt++) {
+          const page = nextPage(c)
+          c.visited.add(page)
+          const { results, totalPages } = await discover(c.provider, c.lang, page, minVotes, c.genres)
+          c.totalPages = totalPages
+          if (results.length) return results.map((m) => ({ m, provider: c.provider, lang: c.lang }))
+        }
+        return []
       }))
 
       const batch = new Map()
