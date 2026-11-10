@@ -127,3 +127,10 @@ button:focus-visible, .chip:focus-within { outline: 3px solid var(--accent); out
 .pickbar { display: flex; flex-direction: column; gap: 6px; }
 .pickrow { display: flex; justify-content: space-between; }
 @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+
+.reason { display: inline-block; margin-bottom: 8px; padding: 3px 10px; border-radius: 999px; background: var(--accent); color: var(--accent-fg); font-size: 0.78rem; font-weight: 700; }
+.toast { position: fixed; z-index: 30; left: 50%; transform: translateX(-50%); width: min(440px, calc(100% - 32px)); top: calc(max(16px, env(safe-area-inset-top, 0px)) + 84px); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 10px 28px rgb(0 0 0 / 0.28); }
+.toast span { min-width: 0; overflow-wrap: anywhere; font-size: 0.92rem; }
+.toast div { display: flex; gap: 8px; }
+.toast button { background: none; border: 1.5px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: 0.85rem; font-weight: 500; }
+.toast button:first-child { border-color: var(--accent); color: var(--accent); }

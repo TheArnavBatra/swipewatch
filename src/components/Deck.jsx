@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import SwipeCard from './SwipeCard'
+import { reasonFor } from '../lib/taste'
 
 const EXIT_MS = 260
 
-export default function Deck({ queue, mode, more, loadingMore, likedCount, canUndo, onSwipe, onUndo, onPick, onEdit }) {
+export default function Deck({ queue, taste, mode, more, loadingMore, likedCount, canUndo, onSwipe, onUndo, onPick, onEdit }) {
   const [exit, setExit] = useState(null)
   const timer = useRef(null)
   const top = queue[0]
@@ -75,7 +76,10 @@ export default function Deck({ queue, mode, more, loadingMore, likedCount, canUn
       <div className="deck" aria-live="polite">
         {top ? (
           queue.slice(0, 3).map((item, i) => (
-            <SwipeCard key={item.id} item={item} depth={i} exit={i === 0 ? exit : null} onDecide={decide} />
+            <SwipeCard
+              key={item.id} item={item} depth={i} exit={i === 0 ? exit : null}
+              reason={reasonFor(taste, item)} onDecide={decide}
+            />
           ))
         ) : (
           <div className="empty">{empty}</div>

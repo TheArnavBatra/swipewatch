@@ -1,5 +1,6 @@
 import { INDUSTRIES, SERVICES } from './services'
 import { SAMPLE } from './sampleCatalog'
+import { GENRES } from './genres'
 
 const KEY = import.meta.env.VITE_TMDB_KEY
 const REGION = import.meta.env.VITE_TMDB_REGION || 'IN'
@@ -8,12 +9,6 @@ const MAX_PAGES = 25
 
 export const hasTmdb = Boolean(KEY)
 export const posterUrl = (path) => (path ? `https://image.tmdb.org/t/p/w500${path}` : null)
-
-const GENRES = {
-  28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime', 99: 'Documentary',
-  18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History', 27: 'Horror', 10402: 'Music',
-  9648: 'Mystery', 10749: 'Romance', 878: 'Sci-fi', 53: 'Thriller', 10752: 'War', 37: 'Western',
-}
 
 export function shuffle(list) {
   const a = [...list]
@@ -24,7 +19,7 @@ export function shuffle(list) {
   return a
 }
 
-async function discover(provider, lang, page, minVotes) {
+async function discover(provider, lang, page, minVotes, genres) {
   const params = new URLSearchParams({
     api_key: KEY,
     watch_region: REGION,
@@ -36,6 +31,7 @@ async function discover(provider, lang, page, minVotes) {
     include_adult: 'false',
     page: String(page),
   })
+  if (genres) params.set('with_genres', genres)
   const res = await fetch(`${API}/discover/movie?${params}`)
   if (!res.ok) throw new Error(`TMDB responded ${res.status}`)
   const data = await res.json()
@@ -50,6 +46,7 @@ function toTitle(m, provider, lang) {
     ind: lang === 'hi' ? 'bollywood' : 'hollywood',
     svcs: [provider.id],
     genre: GENRES[m.genre_ids?.[0]] ?? 'Film',
+    genreIds: m.genre_ids ?? [],
     blurb: m.overview || 'No description yet.',
     poster: posterUrl(m.poster_path),
     rating: m.vote_average ? Math.round(m.vote_average * 10) / 10 : null,
@@ -59,7 +56,7 @@ function toTitle(m, provider, lang) {
 // A feed hands out titles in batches. Each next() call pulls one more page per service and
 // language, so the deck can keep refilling until TMDB has nothing left. A title is only ever
 // returned once, and a film found on two services in the same batch shows both.
-export function createFeed({ services, ind, exclude = [], minVotes = 100 }) {
+export function createFeed({ services, ind, exclude = [], minVotes = 100, favoriteGenres = () => [] }) {
   const seen = new Set(exclude)
 
   if (!hasTmdb) {
@@ -70,15 +67,24 @@ export function createFeed({ services, ind, exclude = [], minVotes = 100 }) {
   }
 
   const langs = ind === 'both' ? ['hi', 'en'] : [INDUSTRIES.find((i) => i.id === ind).lang]
-  const cursors = SERVICES.filter((s) => services.includes(s.id))
-    .flatMap((provider) => langs.map((lang) => ({ provider, lang, page: 1, totalPages: Infinity })))
+  const base = SERVICES.filter((s) => services.includes(s.id))
+    .flatMap((provider) => langs.map((lang) => ({ provider, lang })))
+  const cursors = base.map((c) => ({ ...c, page: 1, totalPages: Infinity, genres: null }))
+  const biasedFor = new Set()
   const open = (c) => c.page <= Math.min(c.totalPages, MAX_PAGES)
 
   return {
     hasMore: () => cursors.some(open),
     async next() {
+      // Once the model has a clear favorite genre, also pull titles in that genre. A new set of
+      // favorites opens a fresh set of pages, and the older ones stay open.
+      const favorites = favoriteGenres().join('|')
+      if (favorites && !biasedFor.has(favorites)) {
+        biasedFor.add(favorites)
+        cursors.push(...base.map((c) => ({ ...c, page: 1, totalPages: Infinity, genres: favorites })))
+      }
       const batches = await Promise.all(cursors.filter(open).map(async (c) => {
-        const { results, totalPages } = await discover(c.provider, c.lang, c.page, minVotes)
+        const { results, totalPages } = await discover(c.provider, c.lang, c.page, minVotes, c.genres)
         c.page += 1
         c.totalPages = totalPages
         return results.map((m) => ({ m, provider: c.provider, lang: c.lang }))

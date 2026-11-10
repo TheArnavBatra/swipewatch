@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import { INDUSTRIES, SERVICES } from '../lib/services'
 import { hasTmdb } from '../lib/tmdb'
 
 export default function Setup({
-  services, ind, mode, gems, watchedCount,
-  onServices, onInd, onMode, onGems, onStart, loading, error,
+  services, ind, mode, gems, watchedCount, tasteCount,
+  onServices, onInd, onMode, onGems, onResetTaste, onStart, loading, error,
 }) {
+  const [confirmReset, setConfirmReset] = useState(false)
   const toggle = (id) =>
     onServices(services.includes(id) ? services.filter((s) => s !== id) : [...services, id])
   const rewatch = mode === 'rewatch'
@@ -78,6 +80,17 @@ export default function Setup({
       <button className="cta" type="button" disabled={services.length === 0 || loading || nothingToRewatch} onClick={onStart}>
         {loading ? 'Finding titles…' : rewatch ? 'Start rewatching' : 'Start swiping'}
       </button>
+      {tasteCount > 0 && (
+        <p className="fine">
+          Your picks are being tuned from {tasteCount} swipes.{' '}
+          <button
+            className="textbtn" type="button"
+            onClick={() => { if (confirmReset) { onResetTaste(); setConfirmReset(false) } else setConfirmReset(true) }}
+          >
+            {confirmReset ? 'Tap again to reset' : 'Reset taste'}
+          </button>
+        </p>
+      )}
       <p className="fine">
         {hasTmdb
           ? 'Titles and streaming availability from TMDB, for India.'

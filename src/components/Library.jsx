@@ -66,7 +66,11 @@ export default function Library({
               : <div className="swatch" style={{ '--h': hueOf(c.title) }} />}
             <div className="t">
               <b>{c.title}</b>
-              <span>{c.svcs.map(serviceName).join(' / ')}{c.year ? ` · ${c.year}` : ''} · {c.genre}</span>
+              <span>
+                {c.svcs.map(serviceName).join(' / ')}{c.year ? ` · ${c.year}` : ''} · {c.genre}
+                {tab === 'watched' && c.like === 'liked' ? ' · You liked it' : ''}
+                {tab === 'watched' && c.like === 'meh' ? ' · Not for you' : ''}
+              </span>
             </div>
             <div className="rowacts">
               {actions(c).map((a) => (

@@ -10,7 +10,7 @@ const EXIT = {
   never: 'translate(0, 560px) scale(0.85) rotate(-6deg)',
 }
 
-export default function SwipeCard({ item, depth, exit, onDecide }) {
+export default function SwipeCard({ item, depth, exit, reason, onDecide }) {
   const start = useRef(null)
   const [drag, setDrag] = useState({ x: 0, y: 0, active: false })
   const isTop = depth === 0
@@ -68,6 +68,7 @@ export default function SwipeCard({ item, depth, exit, onDecide }) {
         <span className="tag">{item.genre}</span>
       </div>
       <div className="info">
+        {reason && <div className="reason">Because you like {reason}</div>}
         <h2>{item.title}</h2>
         {meta && <div className="sub">{meta}</div>}
         <p>{item.blurb}</p>
