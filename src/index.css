@@ -65,9 +65,11 @@ button:focus-visible, .chip:focus-within { outline: 3px solid var(--accent); out
 
 .deck-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
 .meta { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-.deck { position: relative; flex: 1; min-height: 280px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.deck { position: relative; flex: 1; min-height: 220px; container-type: size; touch-action: none; user-select: none; -webkit-user-select: none; }
 .card {
-  position: absolute; inset: 0; border-radius: 24px; padding: 22px; color: #fff; overflow: hidden;
+  position: absolute; inset: 0; margin: auto; border-radius: 24px; padding: 22px; color: #fff; overflow: hidden;
+  width: min(100cqw, 100cqh * 2 / 3); height: min(100cqh, 100cqw * 3 / 2);
+  container-type: inline-size;
   display: flex; flex-direction: column; justify-content: space-between;
   background: linear-gradient(155deg, hsl(var(--h) 62% 38%), hsl(calc(var(--h) + 40) 70% 16%));
   box-shadow: 0 14px 34px rgb(0 0 0 / 0.22);
@@ -76,16 +78,16 @@ button:focus-visible, .chip:focus-within { outline: 3px solid var(--accent); out
 }
 .card.drag { transition: none; cursor: grabbing; }
 .card.top { cursor: grab; }
-.poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; pointer-events: none; }
 .card:has(.poster)::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / 0.45) 0%, transparent 30%, rgb(0 0 0 / 0.88) 100%); pointer-events: none; }
 .card .tags, .card .info { position: relative; z-index: 1; }
 .card .big { position: absolute; right: -10px; bottom: -34px; font-family: var(--font-display); font-weight: 800; font-size: 11rem; line-height: 1; opacity: 0.12; pointer-events: none; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag { background: rgb(255 255 255 / 0.2); border-radius: 999px; padding: 4px 11px; font-size: 0.78rem; font-weight: 500; backdrop-filter: blur(4px); }
 .tag.svc { background: #fff; color: #1c1933; font-weight: 700; }
-.card h2 { font-size: clamp(1.7rem, 8vw, 2.4rem); font-weight: 800; line-height: 1; }
+.card h2 { font-size: clamp(1.15rem, 9cqw, 2.2rem); font-weight: 800; line-height: 1; }
 .sub { opacity: 0.85; font-size: 0.9rem; margin-top: 8px; font-variant-numeric: tabular-nums; }
-.card p { margin: 10px 0 0; font-size: 0.95rem; max-width: 34ch; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.card p { margin: 10px 0 0; font-size: clamp(0.74rem, 3.6cqw, 0.95rem); max-width: 34ch; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .stamp { position: absolute; top: 70px; z-index: 2; padding: 4px 14px; border: 4px solid; border-radius: 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.8rem; letter-spacing: 0.05em; opacity: 0; pointer-events: none; background: rgb(0 0 0 / 0.25); }
 .stamp.yes { left: 20px; color: #6dffc0; border-color: #6dffc0; transform: rotate(-12deg); }
 .stamp.no { right: 20px; color: #ffa27a; border-color: #ffa27a; transform: rotate(12deg); }
