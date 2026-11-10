@@ -10,7 +10,7 @@ const EMPTY = {
 
 export default function Library({
   liked, watched, blocked, winnerId,
-  onPick, onClear, onBack, onRemoveLiked, onMarkWatched, onUnwatch, onRewatch, onRestore,
+  onPick, onClear, onBack, onRemoveLiked, onMarkWatched, onUnwatch, onRewatch, onRestore, onInfo,
 }) {
   const [tab, setTab] = useState('shortlist')
   const lists = { shortlist: liked, watched, never: blocked }
@@ -73,6 +73,7 @@ export default function Library({
               </span>
             </div>
             <div className="rowacts">
+              <button type="button" className="rowbtn" onClick={() => onInfo(c)}>Info</button>
               {actions(c).map((a) => (
                 <button key={a.label} type="button" className="rowbtn" disabled={a.disabled} onClick={a.onClick}>{a.label}</button>
               ))}

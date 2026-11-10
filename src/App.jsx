@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Setup from './components/Setup'
 import Deck from './components/Deck'
 import Library from './components/Library'
+import Details from './components/Details'
 import { createFeed, shuffle } from './lib/tmdb'
 import { load, save } from './lib/storage'
 import { emptyModel, favoriteGenres, learn, rank } from './lib/taste'
@@ -38,7 +39,9 @@ export default function App() {
   const libRef = useRef({ liked, watched, blocked })
   const [taste, setTaste] = useState(() => load('rp.taste', emptyModel()))
   const tasteRef = useRef(taste)
+  const deckModeRef = useRef('new')
   const [ratePrompt, setRatePrompt] = useState(null)
+  const [details, setDetails] = useState(null)
 
   useEffect(() => save('rp.services', services), [services])
   useEffect(() => save('rp.ind', ind), [ind])
@@ -72,6 +75,7 @@ export default function App() {
         setMore(feed.hasMore())
       }
       setDeckMode(mode)
+      deckModeRef.current = mode
       setHistory([])
       setWinnerId(null)
       setScreen('deck')
@@ -115,13 +119,18 @@ export default function App() {
 
   const swipe = useCallback((item, dir) => {
     const { liked: l, watched: w } = libRef.current
-    // Watched teaches nothing by itself; the optional "Liked it" answer does.
-    const signal = { yes: 'yes', no: 'skip', never: 'never' }[dir]
+    // Watched teaches nothing by itself; the optional "Liked it" answer does. Rewatch swipes are
+    // about tonight's mood for something already seen, so they teach nothing either.
+    const learning = deckModeRef.current !== 'rewatch'
+    const signal = learning ? { yes: 'yes', no: 'skip', never: 'never' }[dir] : undefined
     const prevTaste = tasteRef.current
     const nextTaste = signal ? learn(prevTaste, item, signal) : prevTaste
     tasteRef.current = nextTaste
     setTaste(nextTaste)
-    setQueue((q) => reorder(nextTaste, q.filter((x) => x.id !== item.id)))
+    setQueue((q) => {
+      const rest = q.filter((x) => x.id !== item.id)
+      return learning ? reorder(nextTaste, rest) : rest
+    })
     setHistory((h) => [...h, { item, dir, prevTaste, wasLiked: has(l, item.id), wasWatched: has(w, item.id) }])
     setRatePrompt(dir === 'watched' ? item : null)
     if (dir === 'yes') setLiked((cur) => add(cur, item))
@@ -207,6 +216,7 @@ export default function App() {
       {screen === 'deck' && (
         <Deck
           queue={queue} mode={deckMode} more={more} loadingMore={loadingMore} taste={taste}
+          paused={Boolean(details)} onInfo={setDetails}
           likedCount={liked.length} canUndo={history.length > 0}
           onSwipe={swipe} onUndo={undo} onPick={pick} onEdit={() => setScreen('setup')}
         />
@@ -220,6 +230,7 @@ export default function App() {
           </div>
         </div>
       )}
+      {details && <Details key={details.id} item={details} onClose={() => setDetails(null)} />}
       {screen === 'list' && (
         <Library
           liked={liked} watched={watched} blocked={blocked} winnerId={winnerId}
@@ -230,6 +241,7 @@ export default function App() {
           onUnwatch={(id) => setWatched((w) => drop(w, id))}
           onRewatch={(item) => setLiked((l) => add(l, item))}
           onRestore={(id) => setBlocked((b) => drop(b, id))}
+          onInfo={setDetails}
           onBack={() => setScreen(queue.length || history.length ? 'deck' : 'setup')}
         />
       )}

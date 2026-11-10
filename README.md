@@ -17,6 +17,10 @@ Without a TMDB key the app shows 30 sample titles. To see real catalogs:
 
 Streaming availability uses the `IN` region by default. Change `VITE_TMDB_REGION` to switch countries. The provider ids in `src/lib/services.js` are TMDB's India ids.
 
+### IMDb ratings (optional)
+
+TMDB does not provide IMDb ratings, so the details sheet shows its own TMDB rating plus a link to the IMDb page. To also show the IMDb rating, get a free key at https://www.omdbapi.com/apikey.aspx (it is emailed to you), put it in `.env.local` as `VITE_OMDB_KEY`, and restart `npm run dev`. The free plan allows 1,000 requests a day. Each title is fetched once per visit, and only when its details sheet is opened.
+
 The key is bundled into the client, which is fine for a personal project. Don't reuse a key you care about.
 
 ## Install on your phone

@@ -136,3 +136,37 @@ button:focus-visible, .chip:focus-within { outline: 3px solid var(--accent); out
 .toast div { display: flex; gap: 8px; }
 .toast button { background: none; border: 1.5px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: 0.85rem; font-weight: 500; }
 .toast button:first-child { border-color: var(--accent); color: var(--accent); }
+
+.infobtn { position: absolute; z-index: 3; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid rgb(255 255 255 / 0.7); background: rgb(0 0 0 / 0.45); color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 1rem; line-height: 1; display: grid; place-items: center; backdrop-filter: blur(4px); }
+.card .tags { padding-right: 40px; }
+
+.sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.sheet-backdrop { position: absolute; inset: 0; border: 0; padding: 0; background: rgb(8 6 16 / 0.6); cursor: default; }
+.sheet { position: relative; width: min(440px, 100%); max-height: 90%; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; padding: 20px max(18px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px)); border-radius: 24px 24px 0 0; background: var(--bg); border: 1.5px solid var(--line); border-bottom: 0; box-shadow: 0 -12px 40px rgb(0 0 0 / 0.35); }
+.sheet-head { display: flex; gap: 14px; align-items: flex-start; }
+.sheet-poster { flex: none; width: 78px; aspect-ratio: 2 / 3; border-radius: 12px; object-fit: cover; }
+.sheet-title { min-width: 0; flex: 1; }
+.sheet-title h2 { font-size: 1.45rem; font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
+.sheet-title p { margin: 4px 0 0; color: var(--muted); font-size: 0.88rem; }
+.sheet-close { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); font-size: 1rem; }
+.ratings { display: flex; flex-wrap: wrap; gap: 10px; }
+.rating { display: flex; flex-direction: column; padding: 8px 14px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); font-variant-numeric: tabular-nums; }
+.rating b { font-family: var(--font-display); font-size: 1.15rem; }
+.rating span { color: var(--muted); font-size: 0.75rem; }
+.rating.imdb { border-color: #e0a100; }
+.sheet .chips { gap: 6px; }
+.pill { padding: 4px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 0.82rem; }
+.tagline { margin: 0; font-style: italic; color: var(--muted); }
+.overview { margin: 0; }
+.block h3 { margin: 0 0 6px; font-family: var(--font-body); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; }
+.block p { margin: 0; }
+.cast { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.cast li { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cast img, .noface { flex: none; width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: var(--surface); }
+.noface { display: grid; place-items: center; color: var(--muted); font-weight: 700; }
+.cast div { min-width: 0; display: flex; flex-direction: column; }
+.cast b { font-size: 0.88rem; overflow-wrap: anywhere; }
+.cast span { color: var(--muted); font-size: 0.78rem; overflow-wrap: anywhere; }
+.links { display: flex; flex-wrap: wrap; gap: 10px; }
+.links a { padding: 10px 16px; border-radius: 12px; border: 1.5px solid var(--accent); color: var(--accent); font-weight: 700; text-decoration: none; }
+.links a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }

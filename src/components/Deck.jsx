@@ -4,7 +4,7 @@ import { reasonFor } from '../lib/taste'
 
 const EXIT_MS = 260
 
-export default function Deck({ queue, taste, mode, more, loadingMore, likedCount, canUndo, onSwipe, onUndo, onPick, onEdit }) {
+export default function Deck({ queue, taste, mode, more, loadingMore, paused, likedCount, canUndo, onSwipe, onUndo, onPick, onEdit, onInfo }) {
   const [exit, setExit] = useState(null)
   const timer = useRef(null)
   const top = queue[0]
@@ -22,15 +22,17 @@ export default function Deck({ queue, taste, mode, more, loadingMore, likedCount
   }, [exit, top, onSwipe])
 
   useEffect(() => {
+    if (paused) return undefined
     const onKey = (e) => {
-      if (e.key === 'ArrowRight') decide('yes')
+      if (e.key === 'i' && top) onInfo(top)
+      else if (e.key === 'ArrowRight') decide('yes')
       else if (e.key === 'ArrowLeft') decide('no')
       else if (e.key === 'ArrowUp' && !rewatch) { e.preventDefault(); decide('watched') }
       else if (e.key === 'ArrowDown') { e.preventDefault(); decide('never') }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [decide, rewatch])
+  }, [decide, rewatch, paused, top, onInfo])
 
   let empty
   if (loadingMore || more) {
@@ -78,7 +80,7 @@ export default function Deck({ queue, taste, mode, more, loadingMore, likedCount
           queue.slice(0, 3).map((item, i) => (
             <SwipeCard
               key={item.id} item={item} depth={i} exit={i === 0 ? exit : null}
-              reason={reasonFor(taste, item)} onDecide={decide}
+              reason={reasonFor(taste, item)} onDecide={decide} onInfo={onInfo}
             />
           ))
         ) : (
@@ -97,7 +99,7 @@ export default function Deck({ queue, taste, mode, more, loadingMore, likedCount
         )}
         <button className="textbtn danger" type="button" disabled={!top} onClick={() => decide('never')}>Never show again</button>
       </div>
-      <p className="fine center">Drag or use arrow keys: left skips, right keeps{rewatch ? '' : ', up marks watched'}, down hides it for good.</p>
+      <p className="fine center">Drag or use arrow keys: left skips, right keeps{rewatch ? '' : ', up marks watched'}, down hides it for good. Press i for details.</p>
     </main>
   )
 }

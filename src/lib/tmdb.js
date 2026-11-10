@@ -142,3 +142,63 @@ export function createFeed({ services, ind, exclude = [], minVotes = 100, favori
     },
   }
 }
+
+const OMDB_KEY = import.meta.env.VITE_OMDB_KEY
+export const hasOmdb = Boolean(OMDB_KEY)
+const detailsCache = new Map()
+
+// IMDb's rating is not part of TMDB, so it comes from OMDb when a key is set. It is optional:
+// a missing key or a failed request leaves the IMDb rating out instead of failing the sheet.
+async function fetchImdbRating(imdbId) {
+  if (!hasOmdb || !imdbId) return null
+  try {
+    const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_KEY}`)
+    const data = await res.json()
+    if (data.Response === 'False' || !data.imdbRating || data.imdbRating === 'N/A') return null
+    return { rating: data.imdbRating, votes: data.imdbVotes && data.imdbVotes !== 'N/A' ? data.imdbVotes : null }
+  } catch {
+    return null
+  }
+}
+
+// Full details for one title: cast, director, runtime, trailer and ratings. Null means there is
+// nothing more to fetch (sample titles, or no TMDB key), so the caller shows what it already has.
+export function fetchDetails(item) {
+  if (!hasTmdb || !/^\d+$/.test(item.id)) return Promise.resolve(null)
+  // The request itself is cached, so opening a title twice at once or again later costs one fetch.
+  if (!detailsCache.has(item.id)) {
+    const request = loadDetails(item)
+    request.catch(() => detailsCache.delete(item.id))
+    detailsCache.set(item.id, request)
+  }
+  return detailsCache.get(item.id)
+}
+
+async function loadDetails(item) {
+  const res = await fetch(`${API}/movie/${item.id}?${new URLSearchParams({ api_key: KEY, append_to_response: 'credits,videos' })}`)
+  if (!res.ok) throw new Error(`TMDB responded ${res.status}`)
+  const d = await res.json()
+
+  const trailer = d.videos?.results?.find((v) => v.site === 'YouTube' && v.type === 'Trailer')
+    ?? d.videos?.results?.find((v) => v.site === 'YouTube')
+  const details = {
+    tagline: d.tagline || null,
+    runtime: d.runtime || null,
+    genres: (d.genres ?? []).map((g) => g.name),
+    overview: d.overview || null,
+    languages: (d.spoken_languages ?? []).map((l) => l.english_name),
+    countries: (d.production_countries ?? []).map((c) => c.name),
+    director: (d.credits?.crew ?? []).filter((c) => c.job === 'Director').map((c) => c.name),
+    cast: (d.credits?.cast ?? []).slice(0, 8).map((c) => ({
+      name: c.name,
+      role: c.character || null,
+      photo: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null,
+    })),
+    trailerUrl: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
+    imdbUrl: d.imdb_id ? `https://www.imdb.com/title/${d.imdb_id}/` : null,
+    tmdbRating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
+    tmdbVotes: d.vote_count || null,
+    imdb: await fetchImdbRating(d.imdb_id),
+  }
+  return details
+}

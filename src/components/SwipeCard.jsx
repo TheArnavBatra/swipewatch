@@ -10,7 +10,7 @@ const EXIT = {
   never: 'translate(0, 560px) scale(0.85) rotate(-6deg)',
 }
 
-export default function SwipeCard({ item, depth, exit, reason, onDecide }) {
+export default function SwipeCard({ item, depth, exit, reason, onDecide, onInfo }) {
   const start = useRef(null)
   const [drag, setDrag] = useState({ x: 0, y: 0, active: false })
   const isTop = depth === 0
@@ -62,6 +62,12 @@ export default function SwipeCard({ item, depth, exit, reason, onDecide }) {
     >
       {item.poster && <img className="poster" src={item.poster} alt="" draggable="false" />}
       {!item.poster && <span className="big">{item.title.replace(/[^A-Za-z0-9]/g, '').slice(0, 1)}</span>}
+      {isTop && (
+        <button
+          className="infobtn" type="button" aria-label={`More about ${item.title}`}
+          onPointerDown={(e) => e.stopPropagation()} onClick={() => onInfo(item)}
+        >i</button>
+      )}
       <div className="tags">
         {item.svcs.map((s) => <span className="tag svc" key={s}>{serviceName(s)}</span>)}
         <span className="tag">{item.ind === 'bollywood' ? 'Hindi' : 'English'}</span>
