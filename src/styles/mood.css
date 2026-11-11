@@ -44,3 +44,8 @@
 /* The AI's read of their taste, on the filters screen. */
 .insight { padding: 10px 14px; border-left: 3px solid var(--gold); border-radius: 0 12px 12px 0; background: var(--surface); font-family: var(--font-display); font-style: italic; font-size: 0.98rem; line-height: 1.35; }
 .insight b { display: block; margin-bottom: 3px; font-family: var(--font-body); font-style: normal; font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+
+.tabs { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.tabs button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px; border: 0; border-radius: 12px; background: none; color: var(--muted); font-size: 0.68rem; font-weight: 600; cursor: pointer; }
+.tabs button[aria-current='page'] { background: var(--fg); color: var(--bg); }
+.assistant .setup-body { gap: 16px; }

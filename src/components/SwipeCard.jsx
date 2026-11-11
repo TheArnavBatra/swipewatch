@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import ServiceMark from './ServiceMark'
 import Icon from './Icon'
 import { serviceOf } from '../lib/services'
 import { hueOf } from '../lib/storage'
@@ -91,7 +92,7 @@ export default function SwipeCard({ item, depth, exit, reason, allowWatched, onD
         <div className="badges">
           {item.svcs.map((id) => {
             const svc = serviceOf(id)
-            return <span className="badge" key={id} style={{ '--dot': svc.dot }}><i />{svc.name}</span>
+            return <span className="badge" key={id} style={{ '--dot': svc.dot }}><ServiceMark service={svc} size={16} />{svc.name}</span>
           })}
         </div>
         {isTop && (

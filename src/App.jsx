@@ -5,6 +5,7 @@ import Library from './components/Library'
 import Details from './components/Details'
 import Icon from './components/Icon'
 import Mood from './components/Mood'
+import Assistant from './components/Assistant'
 import { aiPaused, aiStatus, askProfile } from './lib/ai'
 import { buildMoodList } from './lib/mood'
 import { profileInput } from './lib/profile'
@@ -52,6 +53,10 @@ export default function App() {
   const [screen, setScreen] = useState('setup')
   const [services, setServices] = useState(() => load('rp.services', ['netflix', 'prime']))
   const [ind, setInd] = useState(() => load('rp.ind', 'both'))
+  // Ask AI has its own choices. Until they are changed they start from the home screen's.
+  const [aiServices, setAiServices] = useState(() => load('rp.ai.services', load('rp.services', ['netflix', 'prime'])))
+  const [aiInd, setAiInd] = useState(() => load('rp.ai.ind', load('rp.ind', 'both')))
+  const [aiGems, setAiGems] = useState(() => load('rp.ai.gems', load('rp.gems', false)))
   const [gems, setGems] = useState(() => load('rp.gems', false))
   const [mode, setMode] = useState('new')
   const [liked, setLiked] = useState(() => load('rp.liked', []))
@@ -94,6 +99,9 @@ export default function App() {
 
   useEffect(() => save('rp.services', services), [services])
   useEffect(() => save('rp.ind', ind), [ind])
+  useEffect(() => save('rp.ai.services', aiServices), [aiServices])
+  useEffect(() => save('rp.ai.ind', aiInd), [aiInd])
+  useEffect(() => save('rp.ai.gems', aiGems), [aiGems])
   useEffect(() => save('rp.gems', gems), [gems])
   useEffect(() => save('rp.liked', liked), [liked])
   useEffect(() => save('rp.watched', watched), [watched])
@@ -149,7 +157,7 @@ export default function App() {
   // Keep the deck topped up so it only ends when TMDB has no more titles for these filters.
   useEffect(() => {
     const feed = feedRef.current
-    if (screen === 'setup' || !feed || fetchingRef.current || queue.length >= REFILL_BELOW || !feed.hasMore()) return
+    if (screen === 'setup' || screen === 'ai' || !feed || fetchingRef.current || queue.length >= REFILL_BELOW || !feed.hasMore()) return
     fetchingRef.current = true
     setLoadingMore(true)
     feed.next()
@@ -337,10 +345,10 @@ export default function App() {
     const run = new AbortController()
     moodRunRef.current = run
     try {
-      if (!services.length) throw new Error('Choose at least one service first, so the list only has things you can watch.')
+      if (!aiServices.length) throw new Error('Choose at least one service first, so the list only has things you can watch.')
       const { liked: l, watched: w, blocked: b } = libRef.current
       const result = await buildMoodList({
-        text, services, ind, exclude: [...l, ...w, ...b].map((t) => t.id),
+        text, services: aiServices, ind: aiInd, gems: aiGems, exclude: [...l, ...w, ...b].map((t) => t.id),
         model: tasteRef.current, profile: aiOnRef.current ? profileRef.current : null,
         onStep: (step) => { if (!run.signal.aborted) setMood((m) => ({ ...m, step })) },
         signal: run.signal,
@@ -408,7 +416,9 @@ export default function App() {
           <button className="navbtn plain" type="button" onClick={back}><Icon name="back" size={18} />Back</button>
         ) : (
           <>
-            <div className="brand">Swipe<em>watch</em></div>
+            <button className="brand" type="button" aria-label="Swipewatch, back to home" onClick={() => { setDetails(null); setScreen('setup') }}>
+              Swipe<em>watch</em>
+            </button>
             <button
               className="navbtn" type="button" aria-label={`Library, ${liked.length} on your shortlist`}
               onClick={() => setScreen('list')}
@@ -425,10 +435,23 @@ export default function App() {
           services={services} ind={ind} mode={mode} gems={gems} watchedCount={watched.length}
           onServices={setServices} onInd={setInd} onMode={setMode} onGems={setGems}
           tasteCount={taste.n} onResetTaste={resetTaste}
-          ai={ai} aiOn={aiOn} onAiOn={setAiOn} profile={profile} onMood={openMood}
           onStart={start} loading={loading} error={error}
           canResume={hasDeck} onResume={() => setScreen('deck')}
         />
+      )}
+      {screen === 'ai' && (
+        <Assistant ai={ai} aiOn={aiOn} onAiOn={setAiOn} profile={profile} tasteCount={taste.n} onMood={openMood}
+          services={aiServices} ind={aiInd} onServices={setAiServices} onInd={setAiInd} gems={aiGems} onGems={setAiGems} />
+      )}
+      {(screen === 'setup' || screen === 'ai') && (
+        <nav className="tabs" aria-label="Main">
+          <button type="button" aria-current={screen === 'setup' ? 'page' : undefined} onClick={() => setScreen('setup')}>
+            <Icon name="home" size={18} /><span>Home</span>
+          </button>
+          <button type="button" aria-current={screen === 'ai' ? 'page' : undefined} onClick={() => setScreen('ai')}>
+            <Icon name="chat" size={18} /><span>Ask AI</span>
+          </button>
+        </nav>
       )}
       {screen === 'deck' && (
         <Deck

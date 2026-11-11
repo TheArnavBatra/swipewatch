@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
 
 const EXAMPLES = [
@@ -23,9 +23,26 @@ function NeedsKey() {
   )
 }
 
+// On a phone the keyboard covers the bottom of the page without resizing it. The visual viewport is
+// the part still showing, so the sheet is fitted to that and its button stays above the keyboard.
+function useVisibleArea() {
+  const [area, setArea] = useState(null)
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return undefined
+    const read = () => setArea({ top: vv.offsetTop, height: vv.height })
+    read()
+    vv.addEventListener('resize', read)
+    vv.addEventListener('scroll', read)
+    return () => { vv.removeEventListener('resize', read); vv.removeEventListener('scroll', read) }
+  }, [])
+  return area
+}
+
 export default function Mood({ ai, text, phase, step, error, inMood, stashed, onText, onSubmit, onCancel, onClose, onLeave }) {
   const field = useRef(null)
   const working = phase === 'working'
+  const area = useVisibleArea()
 
   // The box takes focus on open, Escape closes the sheet, and focus goes back to whatever opened it.
   useEffect(() => {
@@ -43,7 +60,10 @@ export default function Mood({ ai, text, phase, step, error, inMood, stashed, on
   const submit = () => { if (words.length >= 3 && !working) onSubmit(words) }
 
   return (
-    <div className="sheet-wrap" role="dialog" aria-modal="true" aria-labelledby="mood-title">
+    <div
+      className="sheet-wrap" role="dialog" aria-modal="true" aria-labelledby="mood-title"
+      style={area ? { top: area.top, bottom: 'auto', height: area.height } : undefined}
+    >
       <button className="sheet-backdrop" type="button" tabIndex={-1} aria-label="Close" disabled={working} onClick={onClose} />
       <div className="sheet moodsheet">
         <div className="moodbody">

@@ -53,7 +53,7 @@ export const differs = (...args) => gaps(...args).slice(0, 2).join(' · ') || 'C
 // Titles that fit everything asked for form the list. Looser ones come back separately as `near`,
 // each saying how it differs, for the person to opt into. Only when nothing fits exactly is the
 // near list the list itself (closest: true).
-export async function buildMoodList({ text, services, ind, exclude, model, profile, onStep, signal }) {
+export async function buildMoodList({ text, services, ind, gems = false, exclude, model, profile, onStep, signal }) {
   const taste = brief(profile)
 
   onStep('Reading your mood…')
@@ -64,7 +64,7 @@ export async function buildMoodList({ text, services, ind, exclude, model, profi
   onStep('Looking through your services…')
   let pool
   try {
-    pool = await moodPool({ services, ind, intent, exclude })
+    pool = await moodPool({ services, ind, intent, exclude, gems })
   } catch {
     throw new Error('Could not load titles right now. Check your connection and try again.')
   }

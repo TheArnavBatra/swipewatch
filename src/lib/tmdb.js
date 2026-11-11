@@ -3,15 +3,16 @@ import { SAMPLE } from './sampleCatalog'
 import { GENRES } from './genres'
 import { load, save } from './storage'
 
-const KEY = import.meta.env.VITE_TMDB_KEY
 const REGION = import.meta.env.VITE_TMDB_REGION || 'IN'
-const API = 'https://api.themoviedb.org/3'
+// Film data is fetched through the app's own /api/tmdb route, which holds the keys.
+const API = '/api/tmdb'
+const call = (path, params) => `${API}?${new URLSearchParams({ path, ...params })}`
 const MAX_PAGES = 25
 // Pages are visited in random order, with the better-ranked pages more likely to come up first.
 const FIRST_PAGE_RANGE = 3
 const PAGE_DECAY = 6
 
-export const hasTmdb = Boolean(KEY)
+export const hasTmdb = import.meta.env.VITE_HAS_TMDB === '1'
 export const posterUrl = (path) => (path ? `https://image.tmdb.org/t/p/w500${path}` : null)
 const backdropUrl = (path) => (path ? `https://image.tmdb.org/t/p/w780${path}` : null)
 
@@ -27,18 +28,16 @@ export function shuffle(list) {
 // extra holds any more TMDB filters to add, as { parameter: value }. A null lang means any language.
 export async function discover(provider, lang, page, minVotes, extra) {
   const params = new URLSearchParams({
-    api_key: KEY,
     watch_region: REGION,
     with_watch_providers: String(provider.tmdbId),
     with_watch_monetization_types: 'flatrate',
     ...(lang && { with_original_language: lang }),
     sort_by: 'popularity.desc',
     'vote_count.gte': String(minVotes),
-    include_adult: 'false',
     page: String(page),
   })
   for (const [name, value] of Object.entries(extra ?? {})) if (value != null && value !== '') params.set(name, String(value))
-  const res = await fetch(`${API}/discover/movie?${params}`)
+  const res = await fetch(call('discover/movie', Object.fromEntries(params)))
   if (!res.ok) throw new Error(`TMDB responded ${res.status}`)
   const data = await res.json()
   return { results: data.results, totalPages: data.total_pages }
@@ -179,8 +178,8 @@ const peopleCache = new Map()
 function personId(name, department) {
   const key = `${department}:${name.toLowerCase()}`
   if (!peopleCache.has(key)) {
-    const params = new URLSearchParams({ api_key: KEY, query: name, include_adult: 'false' })
-    peopleCache.set(key, fetch(`${API}/search/person?${params}`)
+    const params = { query: name }
+    peopleCache.set(key, fetch(call('search/person', params))
       .then((res) => (res.ok ? res.json() : { results: [] }))
       .then((data) => (data.results.find((p) => p.known_for_department === department) ?? data.results[0])?.id ?? null)
       .catch(() => null))
@@ -203,8 +202,8 @@ function keywordId(theme) {
   const asked = plain(theme)
   const query = KEYWORD_ALIAS[asked] ?? asked
   if (!keywordCache.has(query)) {
-    const params = new URLSearchParams({ api_key: KEY, query })
-    const request = fetch(`${API}/search/keyword?${params}`)
+    const params = { query }
+    const request = fetch(call('search/keyword', params))
       .then((res) => { if (!res.ok) throw new Error(`TMDB responded ${res.status}`); return res.json() })
       .then((data) => {
         const all = data.results ?? []
@@ -258,8 +257,7 @@ export function filterParams(spec) {
   return p
 }
 
-const OMDB_KEY = import.meta.env.VITE_OMDB_KEY
-export const hasOmdb = Boolean(OMDB_KEY)
+export const hasOmdb = import.meta.env.VITE_HAS_OMDB === '1'
 const detailsCache = new Map()
 
 // IMDb's rating is not part of TMDB, so it comes from OMDb when a key is set. It is optional:
@@ -267,7 +265,7 @@ const detailsCache = new Map()
 async function fetchImdbRating(imdbId) {
   if (!hasOmdb || !imdbId) return null
   try {
-    const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_KEY}`)
+    const res = await fetch(call('omdb', { i: imdbId }))
     const data = await res.json()
     if (data.Response === 'False' || !data.imdbRating || data.imdbRating === 'N/A') return null
     return { rating: data.imdbRating, votes: data.imdbVotes && data.imdbVotes !== 'N/A' ? data.imdbVotes : null }
@@ -290,7 +288,7 @@ export function fetchDetails(item) {
 }
 
 async function loadDetails(item) {
-  const res = await fetch(`${API}/movie/${item.id}?${new URLSearchParams({ api_key: KEY, append_to_response: 'credits,videos' })}`)
+  const res = await fetch(call(`movie/${item.id}`, { append_to_response: 'credits,videos' }))
   if (!res.ok) throw new Error(`TMDB responded ${res.status}`)
   const d = await res.json()
 

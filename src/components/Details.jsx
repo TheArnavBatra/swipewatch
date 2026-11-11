@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import ServiceMark from './ServiceMark'
 import Icon from './Icon'
 import { fetchDetails, hasTmdb } from '../lib/tmdb'
 import { serviceOf } from '../lib/services'
@@ -81,7 +82,7 @@ export default function Details({ item, onClose, onDecide, allowWatched }) {
             <div className="where">
               {item.svcs.map((id) => {
                 const svc = serviceOf(id)
-                return <span className="badge" key={id} style={{ '--dot': svc.dot }}><i />{svc.name}</span>
+                return <span className="badge" key={id} style={{ '--dot': svc.dot }}><ServiceMark service={svc} size={16} />{svc.name}</span>
               })}
               {genres.map((g) => <span className="pill" key={g}>{g}</span>)}
             </div>

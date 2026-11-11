@@ -30,7 +30,7 @@ svg.icon { flex: none; display: block; }
 
 /* Header */
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
-.brand { font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; letter-spacing: -0.04em; font-variation-settings: 'SOFT' 100; }
+.brand { background: none; border: 0; padding: 0; margin: 0; color: inherit; cursor: pointer; text-align: left; font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; letter-spacing: -0.04em; font-variation-settings: 'SOFT' 100; }
 .brand em { font-style: italic; font-weight: 600; color: var(--accent); }
 .navbtn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-weight: 600; font-size: 0.9rem; }
 .navbtn .n { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--fg); color: var(--bg); font-size: 0.76rem; display: grid; place-items: center; font-variant-numeric: tabular-nums; animation: pop 0.3s ease; }
@@ -79,12 +79,12 @@ svg.icon { flex: none; display: block; }
 .svcs { display: flex; flex-wrap: wrap; gap: 8px; }
 .svc { position: relative; }
 .svc span { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 14px 0 12px; border: 1px solid var(--line-strong); border-radius: 12px; font-weight: 600; transition: background-color 0.15s ease, color 0.15s ease; }
-/* The brand dot and the tick share one slot, so a chip keeps its width when it is ticked. */
-.svc i { width: 10px; height: 10px; margin: 0 3px; border-radius: 3px; background: var(--dot); }
-.svc svg { display: none; }
+/* The tick keeps its space when hidden, so a chip keeps its width when it is ticked. */
+.svc .mark { flex: none; width: 26px; height: 26px; border-radius: 7px; object-fit: cover; }
+.svc i.mark { width: 10px; height: 10px; margin: 0 8px; border-radius: 3px; background: var(--dot); }
+.svc svg { flex: none; visibility: hidden; margin-left: -2px; }
 .svc input:checked + span { background: var(--fg); border-color: var(--fg); color: var(--bg); }
-.svc input:checked + span i { display: none; }
-.svc input:checked + span svg { display: block; }
+.svc input:checked + span svg { visibility: visible; }
 .credits { display: flex; flex-direction: column; gap: 6px; margin-top: auto; padding-top: 4px; }
 .switchrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); cursor: pointer; }
 .switchrow b { display: block; font-weight: 600; }

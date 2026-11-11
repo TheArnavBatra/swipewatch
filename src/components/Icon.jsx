@@ -16,6 +16,7 @@ const PATHS = {
   star: <path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" />,
   rotate: <path d="M4.5 4.5v4h4M5.3 8.5A7.5 7.5 0 1 1 4.5 12" />,
   chat: <path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-7.5L7 19.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />,
+  home: <path d="M4 11 12 4l8 7M6 10v9a1 1 0 0 0 1 1h3.5v-5h3v5H17a1 1 0 0 0 1-1v-9" />,
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
 }
 const FILLED = new Set(['heart', 'play', 'star'])

@@ -100,7 +100,7 @@ function samplePool({ services, ind, intent, skip }) {
 // was asked for. If that is a short list, "near" holds looser matches, kept apart so they are never
 // mistaken for exact ones; tiers says, per near title, which part of the request it gave up (TIER).
 // missing lists named people or themes the database does not know.
-export async function moodPool({ services, ind, intent, exclude = [] }) {
+export async function moodPool({ services, ind, intent, exclude = [], gems = false }) {
   const skip = new Set(exclude)
   if (!hasTmdb) return samplePool({ services, ind, intent, skip })
 
@@ -117,7 +117,8 @@ export async function moodPool({ services, ind, intent, exclude = [] }) {
   if (missing.length && !hasCore(base)) return empty
 
   // Films with a named person are found even when few people have rated them.
-  let votes = people ? 20 : 100
+  // Hidden gems lets titles with few ratings in from the start, as on the home screen.
+  let votes = gems ? 10 : people ? 20 : 100
   const found = new Map()
   for (const t of await gather(base, { providers, langs, skip, votes })) found.set(t.id, t)
   if (found.size < STRICT_MIN && votes > 20) {

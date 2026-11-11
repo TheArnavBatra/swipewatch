@@ -50,7 +50,7 @@ function tmdb(url) {
 
 let vite, moodPool, TIER, buildMoodList, differs, emptyModel
 before(async () => {
-  process.env.VITE_TMDB_KEY = 'test'
+  process.env.VITE_HAS_TMDB = '1'
   globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} }
   globalThis.fetch = async (input, init) => {
     const url = new URL(String(input), 'http://app.test')
@@ -60,6 +60,12 @@ before(async () => {
       const out = ai[body.task]
       if (out instanceof Error) throw out
       return new Response(JSON.stringify(out.json), { status: out.status ?? 200 })
+    }
+    // The app asks its own /api/tmdb route; the stand-in answers as TMDB would for that path.
+    if (url.pathname === '/api/tmdb') {
+      const real = new URL(`http://tmdb.test/${url.searchParams.get('path')}`)
+      for (const [k, v] of url.searchParams) if (k !== 'path') real.searchParams.set(k, v)
+      return new Response(JSON.stringify(tmdb(real)))
     }
     return new Response(JSON.stringify(tmdb(url)))
   }
@@ -220,4 +226,13 @@ test('buildMoodList: closest matches that miss less come first', async () => {
   assert.deepEqual(out.list.slice(0, 2).map((t) => t.why), ['Not all the named cast', 'Not all the named cast'])
   assert.ok(out.list.slice(2).every((t) => t.why === 'Not all the named cast · After 1999'))
   assert.ok(out.list.every((t) => !('misses' in t)))
+})
+
+test('moodPool: hidden gems lets in titles with few ratings', async () => {
+  CATALOG = [...many(15, 1, { genres: [35] }), film(99, { genres: [35], votes: 30 })]
+  ai = {}
+  const plain = await pool({ genres: [35] })
+  const gems = await pool({ genres: [35] }, { gems: true })
+  assert.ok(!plain.strict.some((t) => t.id === '99'))
+  assert.ok(gems.strict.some((t) => t.id === '99'))
 })
