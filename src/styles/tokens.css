@@ -1,0 +1,41 @@
+/* Palette: cream paper, warm ink, vermilion and marigold. Light by day, dark by night. */
+:root {
+  --bg: #f4ede1;
+  --surface: #fcf8f1;
+  --sunken: #e9dfce;
+  --line: #dcd0bc;
+  --line-strong: #bdae97;
+  --fg: #1d1915;
+  --muted: #675d51;
+  --accent: #c93518;
+  --accent-fg: #fff7f0;
+  --gold: #946100;
+  /* On paper the poster only lends its color, so the page never goes gray behind a dark one. */
+  --ambient: 0.5;
+  --ambient-blend: color;
+  --shadow-s: 0 1px 2px rgb(70 45 20 / 0.12);
+  --shadow-l: 0 2px 4px rgb(70 45 20 / 0.08), 0 18px 40px rgb(70 45 20 / 0.18);
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131110;
+    --surface: #1e1a18;
+    --sunken: #0c0a09;
+    --line: #322c27;
+    --line-strong: #51483f;
+    --fg: #f5eee3;
+    --muted: #aba194;
+    --accent: #ff6040;
+    --accent-fg: #1d0a05;
+    --gold: #f5bd41;
+    --ambient: 0.34;
+    --ambient-blend: normal;
+    --shadow-s: 0 1px 2px rgb(0 0 0 / 0.5);
+    --shadow-l: 0 2px 4px rgb(0 0 0 / 0.3), 0 20px 44px rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+}

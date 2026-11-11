@@ -13,6 +13,7 @@ const PAGE_DECAY = 6
 
 export const hasTmdb = Boolean(KEY)
 export const posterUrl = (path) => (path ? `https://image.tmdb.org/t/p/w500${path}` : null)
+const backdropUrl = (path) => (path ? `https://image.tmdb.org/t/p/w780${path}` : null)
 
 export function shuffle(list) {
   const a = [...list]
@@ -53,6 +54,7 @@ function toTitle(m, provider, lang) {
     genreIds: m.genre_ids ?? [],
     blurb: m.overview || 'No description yet.',
     poster: posterUrl(m.poster_path),
+    backdrop: backdropUrl(m.backdrop_path),
     rating: m.vote_average ? Math.round(m.vote_average * 10) / 10 : null,
   }
 }
@@ -182,6 +184,7 @@ async function loadDetails(item) {
   const trailer = d.videos?.results?.find((v) => v.site === 'YouTube' && v.type === 'Trailer')
     ?? d.videos?.results?.find((v) => v.site === 'YouTube')
   const details = {
+    backdrop: backdropUrl(d.backdrop_path),
     tagline: d.tagline || null,
     runtime: d.runtime || null,
     genres: (d.genres ?? []).map((g) => g.name),

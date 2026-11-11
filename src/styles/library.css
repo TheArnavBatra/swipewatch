@@ -1,0 +1,46 @@
+.list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-top: 4px; }
+.list-head h1 { font-size: 2.1rem; line-height: 1; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--sunken); }
+.tab { min-width: 0; min-height: 40px; padding: 0 4px; border: 0; border-radius: 10px; background: none; color: var(--muted); font-size: 0.88rem; font-weight: 600; white-space: nowrap; }
+.tab span { margin-left: 3px; font-weight: 500; font-variant-numeric: tabular-nums; opacity: 0.75; }
+.tab.on { background: var(--surface); color: var(--fg); box-shadow: var(--shadow-s); }
+
+.rows { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.thumbbtn { flex: none; padding: 0; border: 0; border-radius: 8px; background: none; line-height: 0; }
+.thumb { display: block; width: 58px; aspect-ratio: 2 / 3; border-radius: 8px; object-fit: cover; background: linear-gradient(160deg, hsl(var(--h) 42% 36%), hsl(calc(var(--h) + 28) 50% 14%)); box-shadow: var(--shadow-s); }
+.row .t { flex: 1; min-width: 0; }
+.titlebtn { display: block; max-width: 100%; padding: 0; border: 0; background: none; text-align: left; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; line-height: 1.15; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.titlebtn:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.row .meta { display: block; margin-top: 3px; color: var(--muted); font-size: 0.82rem; }
+.row .verdict { color: var(--fg); font-weight: 600; }
+.rowacts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 9px; }
+.rowacts .btn { min-height: 32px; padding: 0 12px; border-color: transparent; border-radius: 9px; background: var(--sunken); font-size: 0.8rem; }
+.rowacts .linkbtn { font-size: 0.8rem; }
+
+.blank { margin: auto; padding: 28px 16px; text-align: center; }
+.blank h2 { font-size: 1.5rem; }
+.blank p { margin: 8px auto 0; max-width: 30ch; color: var(--muted); }
+
+/* The pick is printed as a ticket stub: marigold paper, a perforation, two punched notches. */
+.ticket {
+  --stub: 98px; --notch: 9px;
+  position: relative; flex: none; display: flex; align-items: center; margin: 2px 0 6px; border-radius: 14px;
+  background: #f5bd41; color: #1d1915; animation: print 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  -webkit-mask: radial-gradient(circle var(--notch) at var(--stub) 0, #0000 97%, #000) top / 100% 51% no-repeat, radial-gradient(circle var(--notch) at var(--stub) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+  mask: radial-gradient(circle var(--notch) at var(--stub) 0, #0000 97%, #000) top / 100% 51% no-repeat, radial-gradient(circle var(--notch) at var(--stub) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+}
+.ticket::before { content: ''; position: absolute; left: var(--stub); top: 16px; bottom: 16px; border-left: 2px dashed rgb(29 25 21 / 0.4); translate: -1px 0; }
+.ticket .thumb { flex: none; width: calc(var(--stub) - 26px); margin: 12px 13px; box-shadow: 0 2px 8px rgb(60 35 0 / 0.35); }
+.ticket-body { flex: 1; min-width: 0; padding: 14px 14px 14px 16px; }
+.ticket-kicker { font-size: 0.78rem; font-weight: 700; }
+.ticket-body h2 { margin-top: 2px; font-size: 1.45rem; line-height: 1.05; overflow-wrap: anywhere; }
+.ticket-body p { margin-top: 5px; font-size: 0.84rem; font-weight: 500; opacity: 0.8; }
+.ticket-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.ticket-acts .btn { min-height: 34px; padding: 0 12px; border-color: #1d1915; border-radius: 9px; color: #1d1915; font-size: 0.82rem; }
+.ticket-acts .btn.solid { background: #1d1915; color: #f5eee3; }
+@keyframes print { from { opacity: 0; transform: translateY(-14px) rotate(-1.5deg); } }
+
+.pickbar { display: flex; flex-direction: column; gap: 8px; }

@@ -3,6 +3,8 @@ import Setup from './components/Setup'
 import Deck from './components/Deck'
 import Library from './components/Library'
 import Details from './components/Details'
+import Icon from './components/Icon'
+import { SERVICES } from './lib/services'
 import { createFeed, shuffle } from './lib/tmdb'
 import { load, save } from './lib/storage'
 import { emptyModel, favoriteGenres, learn, rank } from './lib/taste'
@@ -16,6 +18,17 @@ const reorder = (model, queue, extra = []) =>
   queue.length ? [queue[0], ...rank(model, [...queue.slice(1), ...extra])] : rank(model, extra)
 
 const RATE_PROMPT_MS = 7000
+const LANGUAGE = { bollywood: 'Hindi', hollywood: 'English', both: 'Hindi + English' }
+// A one-line summary of the filters a deck was started with, shown above the cards.
+const describe = (services, ind, mode, gems) => {
+  const names = SERVICES.filter((s) => services.includes(s.id)).map((s) => s.name)
+  return [
+    mode === 'rewatch' ? 'Rewatch' : null,
+    names.length > 2 ? `${names.length} services` : names.join(' + '),
+    LANGUAGE[ind],
+    mode !== 'rewatch' && gems ? 'Hidden gems' : null,
+  ].filter(Boolean).join(' · ')
+}
 
 export default function App() {
   const [screen, setScreen] = useState('setup')
@@ -27,6 +40,8 @@ export default function App() {
   const [watched, setWatched] = useState(() => load('rp.watched', []))
   const [blocked, setBlocked] = useState(() => load('rp.blocked', []))
   const [deckMode, setDeckMode] = useState('new')
+  const [deckLabel, setDeckLabel] = useState('')
+  const deckRef = useRef(null)
   const [queue, setQueue] = useState([])
   const [history, setHistory] = useState([])
   const [winnerId, setWinnerId] = useState(null)
@@ -75,6 +90,7 @@ export default function App() {
         setMore(feed.hasMore())
       }
       setDeckMode(mode)
+      setDeckLabel(describe(services, ind, mode, gems))
       deckModeRef.current = mode
       setHistory([])
       setWinnerId(null)
@@ -185,7 +201,9 @@ export default function App() {
 
   const pick = () => {
     if (!liked.length) return
-    setWinnerId(liked[Math.floor(Math.random() * liked.length)].id)
+    // Asking again never lands on the same title while there is another to choose.
+    const pool = liked.length > 1 ? liked.filter((c) => c.id !== winnerId) : liked
+    setWinnerId(pool[Math.floor(Math.random() * pool.length)].id)
     setScreen('list')
   }
 
@@ -194,14 +212,36 @@ export default function App() {
     if (winnerId === id) setWinnerId(null)
   }
 
+  const hasDeck = queue.length > 0 || history.length > 0
+  const back = () => setScreen(hasDeck ? 'deck' : 'setup')
+  // The sheet can decide for the card it was opened from, and only for that one.
+  const decideFromDetails = (dir) => {
+    setDetails(null)
+    deckRef.current?.decide(dir)
+  }
+  const detailsOnTop = screen === 'deck' && details && queue[0]?.id === details.id
+  const wash = queue[0]?.poster
+
   return (
+    <>
+    <div className="ambient" aria-hidden="true">
+      <i className={screen === 'deck' && wash ? '' : 'off'} style={wash ? { backgroundImage: `url("${wash}")` } : undefined} />
+    </div>
     <div className="app">
-      <header className="top">
-        <div className="brand">swipe<i>watch</i></div>
-        {screen !== 'setup' && (
-          <button className="linkbtn" type="button" onClick={() => setScreen('list')}>
-            Library <b>{liked.length + watched.length + blocked.length}</b>
-          </button>
+      <header className="topbar">
+        {screen === 'list' ? (
+          <button className="navbtn plain" type="button" onClick={back}><Icon name="back" size={18} />Back</button>
+        ) : (
+          <>
+            <div className="brand">Swipe<em>watch</em></div>
+            <button
+              className="navbtn" type="button" aria-label={`Library, ${liked.length} on your shortlist`}
+              onClick={() => setScreen('list')}
+            >
+              <Icon name="bookmark" size={18} />Library
+              {liked.length > 0 && <span className="n" key={liked.length}>{liked.length}</span>}
+            </button>
+          </>
         )}
       </header>
 
@@ -211,10 +251,12 @@ export default function App() {
           onServices={setServices} onInd={setInd} onMode={setMode} onGems={setGems}
           tasteCount={taste.n} onResetTaste={resetTaste}
           onStart={start} loading={loading} error={error}
+          canResume={hasDeck} onResume={() => setScreen('deck')}
         />
       )}
       {screen === 'deck' && (
         <Deck
+          ref={deckRef} label={deckLabel}
           queue={queue} mode={deckMode} more={more} loadingMore={loadingMore} taste={taste}
           paused={Boolean(details)} onInfo={setDetails}
           likedCount={liked.length} canUndo={history.length > 0}
@@ -230,7 +272,12 @@ export default function App() {
           </div>
         </div>
       )}
-      {details && <Details key={details.id} item={details} onClose={() => setDetails(null)} />}
+      {details && (
+        <Details
+          key={details.id} item={details} onClose={() => setDetails(null)}
+          onDecide={detailsOnTop ? decideFromDetails : null} allowWatched={deckMode !== 'rewatch'}
+        />
+      )}
       {screen === 'list' && (
         <Library
           liked={liked} watched={watched} blocked={blocked} winnerId={winnerId}
@@ -242,9 +289,10 @@ export default function App() {
           onRewatch={(item) => setLiked((l) => add(l, item))}
           onRestore={(id) => setBlocked((b) => drop(b, id))}
           onInfo={setDetails}
-          onBack={() => setScreen(queue.length || history.length ? 'deck' : 'setup')}
+          onBack={back}
         />
       )}
     </div>
+    </>
   )
 }

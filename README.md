@@ -40,5 +40,7 @@ Upload `dist/` to any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pag
 
 - `src/lib/tmdb.js`: fetches and merges titles per service and language.
 - `src/lib/sampleCatalog.js`: offline fallback data.
-- `src/components/`: `Setup`, `Deck`, `SwipeCard`, `Shortlist`.
+- `src/lib/taste.js`: the small model that learns from your swipes and orders the deck.
+- `src/components/`: `Setup`, `Deck`, `SwipeCard`, `Library`, `Details`, and the `Icon` set.
+- `src/styles/`: `tokens.css` holds the colors and fonts for light and dark; the other files style one screen each.
 - `scripts/make-icons.mjs`: regenerates the PWA icons in `public/`.

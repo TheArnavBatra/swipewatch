@@ -13,4 +13,5 @@ export const INDUSTRIES = [
   { id: 'both', name: 'Both', sub: 'Mix it up' },
 ]
 
-export const serviceName = (id) => SERVICES.find((s) => s.id === id)?.name ?? id
+export const serviceOf = (id) => SERVICES.find((s) => s.id === id) ?? { id, name: id, dot: '#888' }
+export const serviceName = (id) => serviceOf(id).name

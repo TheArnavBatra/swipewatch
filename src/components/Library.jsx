@@ -1,11 +1,25 @@
 import { useState } from 'react'
+import Icon from './Icon'
 import { serviceName } from '../lib/services'
 import { hueOf } from '../lib/storage'
 
+const TABS = [
+  { id: 'shortlist', label: 'Shortlist' },
+  { id: 'watched', label: 'Seen' },
+  { id: 'never', label: 'Hidden' },
+]
 const EMPTY = {
-  shortlist: ['Nothing kept yet', 'Swipe right on anything that looks good.'],
-  watched: ['Nothing marked watched', 'Tap "Already watched" on a card. It stays out of your deck, and you can rewatch it from here.'],
-  never: ['Nothing hidden', 'Titles you mark "Never show again" appear here so you can bring them back.'],
+  shortlist: ['Nothing kept yet', 'Swipe right on anything that looks good and it lands here.'],
+  watched: ['Nothing marked as seen', 'Tap Seen it on a card. It stays out of your deck, and you can line it up for a rewatch later.'],
+  never: ['Nothing hidden', 'Titles you never want to see again wait here, in case you change your mind.'],
+}
+const VERDICT = { liked: 'You liked it', meh: 'Not for you' }
+const facts = (c) => [c.svcs.map(serviceName).join(' / '), c.year, c.genre].filter(Boolean).join(' · ')
+
+function Thumb({ item }) {
+  return item.poster
+    ? <img className="thumb" src={item.poster} alt="" loading="lazy" />
+    : <span className="thumb" style={{ '--h': hueOf(item.title) }} />
 }
 
 export default function Library({
@@ -13,83 +27,109 @@ export default function Library({
   onPick, onClear, onBack, onRemoveLiked, onMarkWatched, onUnwatch, onRewatch, onRestore, onInfo,
 }) {
   const [tab, setTab] = useState('shortlist')
+  const [confirmClear, setConfirmClear] = useState(false)
   const lists = { shortlist: liked, watched, never: blocked }
-  const items = [...lists[tab]].reverse()
   const likedIds = new Set(liked.map((c) => c.id))
+  const winner = tab === 'shortlist' ? liked.find((c) => c.id === winnerId) : null
+  // Newest first. The pick is already shown on its ticket, so it is left out of the rows.
+  const items = [...lists[tab]].reverse().filter((c) => c.id !== winner?.id)
+
+  const open = (id) => { setTab(id); setConfirmClear(false) }
+  const clear = () => {
+    if (confirmClear) onClear()
+    setConfirmClear(!confirmClear)
+  }
 
   const actions = (c) => {
     if (tab === 'shortlist') {
-      return [
-        { label: 'Watched', onClick: () => onMarkWatched(c) },
-        { label: 'Remove', onClick: () => onRemoveLiked(c.id) },
-      ]
+      return (
+        <>
+          <button className="btn" type="button" onClick={() => onMarkWatched(c)}>Seen it</button>
+          <button className="linkbtn" type="button" onClick={() => onRemoveLiked(c.id)}>Remove</button>
+        </>
+      )
     }
     if (tab === 'watched') {
-      return [
-        { label: likedIds.has(c.id) ? 'On shortlist' : 'Rewatch', onClick: () => onRewatch(c), disabled: likedIds.has(c.id) },
-        { label: 'Not watched', onClick: () => onUnwatch(c.id) },
-      ]
+      const queued = likedIds.has(c.id)
+      return (
+        <>
+          <button className="btn" type="button" disabled={queued} onClick={() => onRewatch(c)}>{queued ? 'On your shortlist' : 'Rewatch'}</button>
+          <button className="linkbtn" type="button" onClick={() => onUnwatch(c.id)}>Not seen</button>
+        </>
+      )
     }
-    return [{ label: 'Restore', onClick: () => onRestore(c.id) }]
+    return <button className="btn" type="button" onClick={() => onRestore(c.id)}>Bring back</button>
   }
-
-  const tabs = [
-    { id: 'shortlist', label: 'Shortlist', n: liked.length },
-    { id: 'watched', label: 'Watched', n: watched.length },
-    { id: 'never', label: 'Never show', n: blocked.length },
-  ]
 
   return (
     <main className="list">
-      <h1>Your library</h1>
+      <div className="list-head">
+        <h1>Library</h1>
+        {tab === 'shortlist' && liked.length > 0 && (
+          <button className="linkbtn" type="button" onClick={clear}>{confirmClear ? 'Tap again to clear' : 'Clear shortlist'}</button>
+        )}
+      </div>
+
       <div className="tabs" role="tablist">
-        {tabs.map((t) => (
+        {TABS.map((t) => (
           <button
             key={t.id} type="button" role="tab" aria-selected={tab === t.id}
-            className={`tab ${tab === t.id ? 'on' : ''}`} onClick={() => setTab(t.id)}
+            className={`tab${tab === t.id ? ' on' : ''}`} onClick={() => open(t.id)}
           >
-            {t.label} <span>{t.n}</span>
+            {t.label}<span>{lists[t.id].length}</span>
           </button>
         ))}
       </div>
 
-      <div className="rows">
-        {items.length === 0 && (
-          <div className="row">
-            <div className="t"><b>{EMPTY[tab][0]}</b><span>{EMPTY[tab][1]}</span></div>
-          </div>
-        )}
-        {items.map((c) => (
-          <div className={`row ${tab === 'shortlist' && winnerId === c.id ? 'winner' : ''}`} key={c.id}>
-            {c.poster
-              ? <img className="swatch" src={c.poster} alt="" />
-              : <div className="swatch" style={{ '--h': hueOf(c.title) }} />}
-            <div className="t">
-              <b>{c.title}</b>
-              <span>
-                {c.svcs.map(serviceName).join(' / ')}{c.year ? ` · ${c.year}` : ''} · {c.genre}
-                {tab === 'watched' && c.like === 'liked' ? ' · You liked it' : ''}
-                {tab === 'watched' && c.like === 'meh' ? ' · Not for you' : ''}
-              </span>
-            </div>
-            <div className="rowacts">
-              <button type="button" className="rowbtn" onClick={() => onInfo(c)}>Info</button>
-              {actions(c).map((a) => (
-                <button key={a.label} type="button" className="rowbtn" disabled={a.disabled} onClick={a.onClick}>{a.label}</button>
-              ))}
+      {winner && (
+        <div className="ticket" key={winner.id} role="status">
+          <Thumb item={winner} />
+          <div className="ticket-body">
+            <div className="ticket-kicker">Tonight's pick</div>
+            <h2>{winner.title}</h2>
+            <p>{facts(winner)}</p>
+            <div className="ticket-acts">
+              <button className="btn solid" type="button" onClick={() => onInfo(winner)}>Details</button>
+              <button className="btn" type="button" onClick={() => onMarkWatched(winner)}>Seen it</button>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {items.length === 0 && !winner ? (
+        <div className="blank">
+          <h2>{EMPTY[tab][0]}</h2>
+          <p>{EMPTY[tab][1]}</p>
+        </div>
+      ) : (
+        <ul className="rows">
+          {items.map((c) => (
+            <li className="row" key={c.id}>
+              <button className="thumbbtn" type="button" tabIndex={-1} aria-hidden="true" onClick={() => onInfo(c)}>
+                <Thumb item={c} />
+              </button>
+              <div className="t">
+                <button className="titlebtn" type="button" onClick={() => onInfo(c)}>{c.title}</button>
+                <span className="meta">
+                  {facts(c)}
+                  {tab === 'watched' && VERDICT[c.like] && <> · <span className="verdict">{VERDICT[c.like]}</span></>}
+                </span>
+                <div className="rowacts">{actions(c)}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="pickbar">
-        {tab === 'shortlist' && (
-          <button className="cta" type="button" disabled={liked.length === 0} onClick={onPick}>Pick one for me</button>
+        {tab === 'shortlist' && liked.length > 0 && (
+          <button className="btn primary big" type="button" onClick={onPick}>
+            <Icon name="shuffle" />{winner && liked.length > 1 ? 'Pick another' : 'Pick one for me'}
+          </button>
         )}
-        <div className="pickrow">
-          <button className="linkbtn" type="button" onClick={onBack}>Back to swiping</button>
-          {tab === 'shortlist' && liked.length > 0 && <button className="linkbtn" type="button" onClick={onClear}>Clear list</button>}
-        </div>
+        {tab === 'shortlist' && liked.length === 0 && (
+          <button className="btn big" type="button" onClick={onBack}>Go find something</button>
+        )}
       </div>
     </main>
   )

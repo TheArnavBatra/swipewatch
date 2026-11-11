@@ -1,0 +1,60 @@
+.sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.sheet-backdrop { position: absolute; inset: 0; padding: 0; border: 0; background: rgb(10 7 5 / 0.64); cursor: default; animation: fade 0.2s ease; }
+.sheet { position: relative; width: min(520px, 100%); max-height: min(93%, 880px); display: flex; flex-direction: column; overflow: hidden; border-radius: 24px 24px 0 0; background: var(--bg); box-shadow: 0 -12px 44px rgb(0 0 0 / 0.4); animation: rise 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.sheet-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+@keyframes rise { from { opacity: 0; transform: translateY(48px); } }
+@keyframes fade { from { opacity: 0; } }
+
+/* The hero melts into the sheet through a mask, so no edge is left where the image stops. */
+.sheet-hero {
+  position: relative; aspect-ratio: 16 / 9; overflow: hidden;
+  background: linear-gradient(160deg, hsl(var(--h) 42% 32%), hsl(calc(var(--h) + 28) 50% 12%));
+  -webkit-mask: linear-gradient(180deg, #000 30%, rgb(0 0 0 / 0.2) 72%, #0000 96%);
+  mask: linear-gradient(180deg, #000 30%, rgb(0 0 0 / 0.2) 72%, #0000 96%);
+}
+.sheet-hero img { width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
+.sheet-hero.soft img { filter: blur(22px) saturate(1.2); transform: scale(1.35); }
+.sheet-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / 0.3), rgb(0 0 0 / 0) 30%); }
+.sheet-close { position: absolute; z-index: 3; top: 12px; right: 12px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: rgb(0 0 0 / 0.55); color: #fff; display: grid; place-items: center; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+
+.sheet-headline { position: relative; z-index: 1; display: flex; align-items: flex-end; gap: 14px; margin-top: -64px; padding: 0 18px; }
+.sheet-poster { flex: none; width: 96px; aspect-ratio: 2 / 3; border-radius: 10px; object-fit: cover; box-shadow: var(--shadow-l); outline: 1px solid rgb(255 255 255 / 0.16); outline-offset: -1px; background: linear-gradient(160deg, hsl(var(--h) 42% 36%), hsl(calc(var(--h) + 28) 50% 14%)); }
+.sheet-title { flex: 1; min-width: 0; padding-bottom: 2px; }
+.sheet-title h2 { font-size: clamp(1.5rem, 6.4vw, 1.9rem); line-height: 1.04; overflow-wrap: anywhere; }
+.sheet-title p { margin-top: 6px; color: var(--muted); font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+
+.sheet-body { display: flex; flex-direction: column; gap: 18px; padding: 18px 18px 22px; }
+.facts { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px 22px; }
+.fact b { display: flex; align-items: center; gap: 5px; font-family: var(--font-display); font-weight: 600; font-size: 1.35rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.fact b svg { color: var(--gold); }
+.fact span { display: block; margin-top: 2px; color: var(--muted); font-size: 0.76rem; }
+.where { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.where .badge { border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); }
+.pill { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: 0.78rem; font-weight: 500; }
+.tagline { font-family: var(--font-display); font-style: italic; font-size: 1.12rem; line-height: 1.3; }
+.overview { line-height: 1.55; }
+.block h3 { margin-bottom: 8px; font-size: 0.95rem; font-weight: 600; }
+.block p { color: var(--muted); }
+
+.cast { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 10px; }
+.cast li { min-width: 0; text-align: center; }
+.cast img, .noface { display: block; width: min(64px, 100%); aspect-ratio: 1; margin: 0 auto 7px; border-radius: 50%; object-fit: cover; background: var(--sunken); }
+.noface { display: grid; place-items: center; color: var(--muted); font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; }
+.cast b { display: block; font-size: 0.78rem; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.cast b + span { display: -webkit-box; margin-top: 2px; color: var(--muted); font-size: 0.72rem; line-height: 1.25; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cast.ghost i { display: block; width: min(64px, 100%); aspect-ratio: 1; margin: 0 auto; border-radius: 50%; background: var(--sunken); animation: breathe 1.4s ease-in-out infinite; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.links .btn { flex: 1; min-width: 150px; }
+.sheet-foot { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; padding: 12px 18px max(14px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--bg); }
+.sheet-foot .btn { padding: 0 8px; white-space: nowrap; }
+@media (max-width: 350px) {
+  .sheet-foot { gap: 6px; padding-inline: 14px; }
+  .sheet-foot .btn { gap: 6px; padding: 0 4px; }
+}
+
+@media (min-width: 700px) and (min-height: 600px) {
+  .sheet-wrap { align-items: center; }
+  .sheet { max-height: min(90%, 860px); border-radius: 24px; }
+}

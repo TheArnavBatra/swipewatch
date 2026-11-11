@@ -1,11 +1,27 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import Icon from './Icon'
 import SwipeCard from './SwipeCard'
 import { reasonFor } from '../lib/taste'
 
 const EXIT_MS = 260
+// The swipe hint is for a first visit. It steps aside once the gestures have clearly landed.
+const HINT_UNTIL = 3
 
-export default function Deck({ queue, taste, mode, more, loadingMore, paused, likedCount, canUndo, onSwipe, onUndo, onPick, onEdit, onInfo }) {
+function Action({ icon, label, hint, title, size, tone = '', ...rest }) {
+  return (
+    <button className={`act ${tone}`} type="button" title={title} aria-label={title} {...rest}>
+      <span className="disc"><Icon name={icon} size={size} /></span>
+      <span>{label}{hint && <span className="key" aria-hidden="true">{hint}</span>}</span>
+    </button>
+  )
+}
+
+export default function Deck({
+  ref, queue, taste, mode, label, more, loadingMore, paused, likedCount, canUndo,
+  onSwipe, onUndo, onPick, onEdit, onInfo,
+}) {
   const [exit, setExit] = useState(null)
+  const [done, setDone] = useState(0)
   const timer = useRef(null)
   const top = queue[0]
   const rewatch = mode === 'rewatch'
@@ -13,49 +29,51 @@ export default function Deck({ queue, taste, mode, more, loadingMore, paused, li
   useEffect(() => () => clearTimeout(timer.current), [])
 
   const decide = useCallback((dir) => {
-    if (exit || !top) return
+    if (exit || !top || (dir === 'watched' && rewatch)) return
     setExit(dir)
     timer.current = setTimeout(() => {
       onSwipe(top, dir)
       setExit(null)
+      setDone((n) => n + 1)
     }, EXIT_MS)
-  }, [exit, top, onSwipe])
+  }, [exit, top, rewatch, onSwipe])
+
+  // Lets the details sheet decide on the card it was opened from.
+  useImperativeHandle(ref, () => ({ decide }), [decide])
 
   useEffect(() => {
     if (paused) return undefined
     const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'i' && top) onInfo(top)
+      else if (e.key === 'u' && canUndo) onUndo()
       else if (e.key === 'ArrowRight') decide('yes')
       else if (e.key === 'ArrowLeft') decide('no')
-      else if (e.key === 'ArrowUp' && !rewatch) { e.preventDefault(); decide('watched') }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); decide('watched') }
       else if (e.key === 'ArrowDown') { e.preventDefault(); decide('never') }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [decide, rewatch, paused, top, onInfo])
+  }, [decide, paused, top, canUndo, onInfo, onUndo])
 
+  const waiting = loadingMore || more
   let empty
-  if (loadingMore || more) {
-    empty = (
-      <>
-        <h2>Finding more…</h2>
-        <p>Loading the next batch of titles.</p>
-      </>
-    )
+  if (waiting) {
+    empty = (<><h2>Finding more…</h2><p>Loading the next batch of titles.</p></>)
   } else if (likedCount) {
     empty = (
       <>
         <h2>That's the lot.</h2>
         <p>You kept {likedCount}. Let me choose between them.</p>
-        <button className="cta" type="button" onClick={onPick}>Pick one for me</button>
+        <button className="btn primary" type="button" onClick={onPick}><Icon name="shuffle" />Pick one for me</button>
       </>
     )
   } else if (rewatch) {
     empty = (
       <>
         <h2>Nothing left to rewatch.</h2>
-        <p>Mark titles as watched while swiping and they'll show up here.</p>
-        <button className="cta" type="button" onClick={onEdit}>Change filters</button>
+        <p>Mark titles as seen while swiping and they'll show up here.</p>
+        <button className="btn" type="button" onClick={onEdit}>Change filters</button>
       </>
     )
   } else {
@@ -63,43 +81,45 @@ export default function Deck({ queue, taste, mode, more, loadingMore, paused, li
       <>
         <h2>Nothing here.</h2>
         <p>No titles match, or you've seen them all. Try another service, or include hidden gems.</p>
-        <button className="cta" type="button" onClick={onEdit}>Change filters</button>
+        <button className="btn" type="button" onClick={onEdit}>Change filters</button>
       </>
     )
   }
 
   return (
     <main className="deck-wrap">
-      <div className="meta">
-        <span>{rewatch ? 'Rewatch · ' : ''}{queue.length}{more ? '+' : ''} left · {likedCount} kept</span>
-        <button className="linkbtn" type="button" onClick={onEdit}>Change filters</button>
+      <div className="deckbar">
+        <button className="filterchip" type="button" aria-label={`Change filters. Now showing ${label}`} onClick={onEdit}>
+          <Icon name="sliders" size={18} /><span>{label}</span>
+        </button>
+        {top && <span className="count">{queue.length}{more ? '+' : ''} left</span>}
       </div>
 
       <div className="deck" aria-live="polite">
         {top ? (
           queue.slice(0, 3).map((item, i) => (
             <SwipeCard
-              key={item.id} item={item} depth={i} exit={i === 0 ? exit : null}
+              key={item.id} item={item} depth={i} exit={i === 0 ? exit : null} allowWatched={!rewatch}
               reason={reasonFor(taste, item)} onDecide={decide} onInfo={onInfo}
             />
           ))
         ) : (
-          <div className="empty">{empty}</div>
+          <div className={`empty${waiting ? ' loading' : ''}`}>{empty}</div>
         )}
       </div>
 
       <div className="actions">
-        <button className="round small" type="button" aria-label="Undo last swipe" disabled={!canUndo} onClick={onUndo}>↶</button>
-        <button className="round no" type="button" aria-label="Skip" disabled={!top} onClick={() => decide('no')}>✕</button>
-        <button className="round yes" type="button" aria-label="Add to shortlist" disabled={!top} onClick={() => decide('yes')}>♥</button>
-      </div>
-      <div className="subactions">
+        <Action icon="ban" label="Never" hint="↓" title="Never show this again" disabled={!top} onClick={() => decide('never')} />
+        <Action icon="x" label="Skip" hint="←" title="Skip for now" size={28} tone="big" disabled={!top} onClick={() => decide('no')} />
         {!rewatch && (
-          <button className="textbtn" type="button" disabled={!top} onClick={() => decide('watched')}>Already watched</button>
+          <Action icon="eye" label="Seen it" hint="↑" title="Already seen it" disabled={!top} onClick={() => decide('watched')} />
         )}
-        <button className="textbtn danger" type="button" disabled={!top} onClick={() => decide('never')}>Never show again</button>
+        <Action icon="heart" label="Keep" hint="→" title="Keep on your shortlist" size={28} tone="big keep" disabled={!top} onClick={() => decide('yes')} />
+        <Action icon="undo" label="Undo" hint="U" title="Undo the last swipe" disabled={!canUndo} onClick={onUndo} />
       </div>
-      <p className="fine center">Drag or use arrow keys: left skips, right keeps{rewatch ? '' : ', up marks watched'}, down hides it for good. Press i for details.</p>
+      {top && taste.n < HINT_UNTIL && done < HINT_UNTIL && (
+        <p className="hint">Swipe right to keep, left to skip. Tap the card for more.</p>
+      )}
     </main>
   )
 }
