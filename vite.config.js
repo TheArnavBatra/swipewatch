@@ -60,18 +60,10 @@ export default defineConfig({
       workbox: {
         // The API routes are never answered from the offline cache.
         navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/image\.tmdb\.org\/.*/,
-            handler: 'CacheFirst',
-            options: { cacheName: 'tmdb-posters', expiration: { maxEntries: 150, maxAgeSeconds: 60 * 60 * 24 * 30 } },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/,
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'google-fonts' },
-          },
-        ],
+        // No runtime caching of TMDB's images or Google Fonts. Fetching them from inside the service
+        // worker is what the site's Content-Security-Policy (connect-src 'self') forbids, and the
+        // browser's own cache already keeps them. Only the app itself is precached.
+        runtimeCaching: [],
       },
     }),
   ],
