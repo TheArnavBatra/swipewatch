@@ -1,10 +1,26 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { aiMiddleware } from './server/route.js'
+
+// The AI route lives inside the dev and preview servers, so the Gemini key stays on this machine.
+// It is read from .env.local without a VITE_ prefix, which keeps it out of the browser bundle.
+function aiRoute() {
+  let env = {}
+  // The braces matter: a value returned from configureServer is run by Vite as a post hook.
+  const mount = (server) => { server.middlewares.use('/api/ai', aiMiddleware(env)) }
+  return {
+    name: 'swipewatch-ai',
+    configResolved(config) { env = loadEnv(config.mode, config.envDir, '') },
+    configureServer: mount,
+    configurePreviewServer: mount,
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    aiRoute(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',

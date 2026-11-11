@@ -1,0 +1,46 @@
+/* The mood sheet reuses the details sheet's frame (.sheet-wrap, .sheet) and only adds its own insides. */
+.moodbody { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 20px 18px 16px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+/* Short screens scroll the body. Without this, flex would squash the text box instead. */
+.moodbody > * { flex-shrink: 0; }
+/* The action stays in view however much of the sheet is scrolled, like the details sheet's footer. */
+.moodfoot { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 12px 18px max(14px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--bg); }
+.moodhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.moodhead h2 { font-size: clamp(1.7rem, 8vw, 2.1rem); line-height: 1.05; }
+.moodhead em { font-style: italic; color: var(--accent); }
+.moodclose { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--surface); }
+.moodclose:disabled { opacity: 0.4; }
+.moodsheet .lede { margin-top: 0; }
+
+.moodfield {
+  display: block; width: 100%; resize: none; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: 14px;
+  background: var(--surface); color: var(--fg); font: inherit; font-size: 1.02rem; line-height: 1.4;
+}
+.moodfield::placeholder { color: var(--muted); opacity: 0.85; }
+.moodfield:disabled { opacity: 0.6; }
+.moodchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.moodchips button { min-height: 36px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: transparent; font-size: 0.86rem; font-weight: 500; }
+.moodchips button:hover:not(:disabled) { background: var(--surface); }
+.moodchips button:disabled { opacity: 0.45; }
+.moodstep { display: grid; place-items: center; min-height: 56px; border: 1.5px dashed var(--line-strong); border-radius: 14px; font-weight: 600; animation: breathe 1.4s ease-in-out infinite; }
+.moodback { align-self: center; }
+.moodsheet .fine { text-align: center; }
+
+.moodoff { display: flex; flex-direction: column; gap: 10px; }
+.moodoff ol { margin: 0; padding-left: 1.25em; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+.moodoff a { color: var(--fg); }
+.moodoff code { padding: 1px 5px; border-radius: 5px; background: var(--sunken); font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.85em; color: var(--fg); }
+
+/* Where the mood sheet is opened from. */
+.moodcard { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; text-align: left; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--surface); transition: transform 0.12s ease; }
+.moodcard:active { transform: scale(0.99); }
+.moodcard-icon { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--fg); color: var(--bg); }
+.moodcard-text { flex: 1; min-width: 0; }
+.moodcard b { display: block; font-weight: 600; }
+.moodcard small { display: block; color: var(--muted); font-size: 0.82rem; line-height: 1.3; }
+.moodcard > .icon:last-child { color: var(--muted); }
+.deckmeta { flex: none; display: flex; align-items: center; gap: 10px; }
+.moodbtn { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+
+/* The AI's read of their taste, on the filters screen. */
+.insight { padding: 10px 14px; border-left: 3px solid var(--gold); border-radius: 0 12px 12px 0; background: var(--surface); font-family: var(--font-display); font-style: italic; font-size: 0.98rem; line-height: 1.35; }
+.insight b { display: block; margin-bottom: 3px; font-family: var(--font-body); font-style: normal; font-size: 0.78rem; font-weight: 600; color: var(--muted); }

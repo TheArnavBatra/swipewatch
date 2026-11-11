@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import Icon from './Icon'
 import { serviceOf } from '../lib/services'
 import { hueOf } from '../lib/storage'
+import { languageName } from '../lib/languages'
 
 const SWIPE_X = 100
 // Up and down are rarer and harder to take back by feel, so they need a longer pull.
@@ -104,13 +105,14 @@ export default function SwipeCard({ item, depth, exit, reason, allowWatched, onD
       </div>
 
       <div className="card-info">
-        {reason && <div className="reason">Because you like {reason}</div>}
+        {/* An AI reason is a whole phrase already; the model's own is a feature name. */}
+        {item.why ? <div className="reason">{item.why}</div> : reason && <div className="reason">Because you like {reason}</div>}
         <h2>{item.title}</h2>
         <div className="sub">
           {item.rating && <span className="star"><Icon name="star" size={13} />{item.rating}</span>}
           {item.year && <span>{item.year}</span>}
           <span>{item.genre}</span>
-          <span>{item.ind === 'bollywood' ? 'Hindi' : 'English'}</span>
+          <span>{languageName(item)}</span>
         </div>
         <p>{item.blurb}</p>
       </div>

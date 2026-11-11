@@ -9,6 +9,7 @@ const WHEN = hour >= 17 || hour < 4 ? 'tonight' : 'today'
 export default function Setup({
   services, ind, mode, gems, watchedCount, tasteCount, canResume,
   onServices, onInd, onMode, onGems, onResetTaste, onStart, onResume, loading, error,
+  ai, aiOn, onAiOn, profile, onMood,
 }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const toggle = (id) =>
@@ -27,6 +28,17 @@ export default function Setup({
           <h1>What are we <em>watching</em> {WHEN}?</h1>
           <p className="lede">Pick where you stream and what you're in the mood for, then swipe until something sticks.</p>
         </div>
+
+        {(ai === 'ready' || ai === 'nokey') && (
+          <button className="moodcard" type="button" onClick={onMood}>
+            <span className="moodcard-icon"><Icon name="chat" size={20} /></span>
+            <span className="moodcard-text">
+              <b>Not sure what you want?</b>
+              <small>{ai === 'ready' ? "Tell me how you feel and I'll line up a list for right now." : 'Needs a free Gemini key. Tap to see how.'}</small>
+            </span>
+            <Icon name="arrow" size={18} />
+          </button>
+        )}
 
         <section className="field">
           <h2 id="f-services">Where do you watch?</h2>
@@ -75,7 +87,19 @@ export default function Setup({
           </label>
         )}
 
+        {ai === 'ready' && (
+          <label className="switchrow">
+            <span><b>Learn from my swipes</b><small>Gemini reads the titles you keep and skip to spot patterns</small></span>
+            <span className="switch">
+              <input type="checkbox" role="switch" checked={aiOn} onChange={(e) => onAiOn(e.target.checked)} /><i />
+            </span>
+          </label>
+        )}
+
         <div className="credits">
+          {aiOn && profile?.summary && (
+            <p className="insight"><b>What the AI noticed</b>{profile.summary}</p>
+          )}
           {tasteCount > 0 && (
             <p className="fine">
               Tuned to your taste from {tasteCount} {tasteCount === 1 ? 'swipe' : 'swipes'}.{' '}

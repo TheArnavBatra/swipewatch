@@ -18,7 +18,7 @@ function Action({ icon, label, hint, title, size, tone = '', ...rest }) {
 
 export default function Deck({
   ref, queue, taste, mode, label, more, loadingMore, paused, likedCount, canUndo,
-  onSwipe, onUndo, onPick, onEdit, onInfo,
+  onSwipe, onUndo, onPick, onEdit, onInfo, onMood, onLeaveMood, stashed, nearCount, onNear,
 }) {
   const [exit, setExit] = useState(null)
   const [done, setDone] = useState(0)
@@ -60,6 +60,27 @@ export default function Deck({
   let empty
   if (waiting) {
     empty = (<><h2>Finding more…</h2><p>Loading the next batch of titles.</p></>)
+  } else if (mode === 'mood') {
+    empty = (
+      <>
+        <h2>{nearCount ? "That's every match." : "That's the list."}</h2>
+        <p>
+          {nearCount
+            ? 'That is everything that fits what you asked for. The closest others say how they differ.'
+            : likedCount ? `You've kept ${likedCount} so far.` : 'Nothing caught your eye? Try describing it another way.'}
+        </p>
+        {nearCount > 0 && (
+          <button className="btn primary" type="button" onClick={onNear}>
+            Show {nearCount} closest {nearCount === 1 ? 'match' : 'matches'}
+          </button>
+        )}
+        {likedCount > 0 && (
+          <button className={`btn${nearCount ? '' : ' primary'}`} type="button" onClick={onPick}><Icon name="shuffle" />Pick one for me</button>
+        )}
+        <button className="btn" type="button" onClick={onMood}>Try another mood</button>
+        <button className="linkbtn" type="button" onClick={onLeaveMood}>{stashed ? 'Back to your deck' : 'Change filters'}</button>
+      </>
+    )
   } else if (likedCount) {
     empty = (
       <>
@@ -89,10 +110,23 @@ export default function Deck({
   return (
     <main className="deck-wrap">
       <div className="deckbar">
-        <button className="filterchip" type="button" aria-label={`Change filters. Now showing ${label}`} onClick={onEdit}>
-          <Icon name="sliders" size={18} /><span>{label}</span>
-        </button>
-        {top && <span className="count">{queue.length}{more ? '+' : ''} left</span>}
+        {mode === 'mood' ? (
+          <button className="filterchip" type="button" aria-label={`Change your mood. Now showing ${label}`} onClick={onMood}>
+            <Icon name="chat" size={18} /><span>{label}</span>
+          </button>
+        ) : (
+          <button className="filterchip" type="button" aria-label={`Change filters. Now showing ${label}`} onClick={onEdit}>
+            <Icon name="sliders" size={18} /><span>{label}</span>
+          </button>
+        )}
+        <div className="deckmeta">
+          {onMood && mode !== 'mood' && (
+            <button className="moodbtn" type="button" title="Describe your mood" aria-label="Describe your mood" onClick={onMood}>
+              <Icon name="chat" size={18} />
+            </button>
+          )}
+          {top && <span className="count">{queue.length}{more ? '+' : ''} left</span>}
+        </div>
       </div>
 
       <div className="deck" aria-live="polite">

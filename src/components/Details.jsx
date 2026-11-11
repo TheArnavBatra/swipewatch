@@ -3,6 +3,7 @@ import Icon from './Icon'
 import { fetchDetails, hasTmdb } from '../lib/tmdb'
 import { serviceOf } from '../lib/services'
 import { hueOf } from '../lib/storage'
+import { languageName } from '../lib/languages'
 
 const runtimeText = (m) => (!m ? null : m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`)
 
@@ -43,7 +44,7 @@ export default function Details({ item, onClose, onDecide, allowWatched }) {
   }, [])
 
   const { status, data } = state
-  const meta = [item.year, runtimeText(data?.runtime), data?.languages?.[0]].filter(Boolean).join(' · ')
+  const meta = [item.year, runtimeText(data?.runtime), data?.originalLanguage ? languageName({ lang: data.originalLanguage }) : data?.languages?.[0]].filter(Boolean).join(' · ')
   const genres = data?.genres?.length ? data.genres : [item.genre]
   const backdrop = data?.backdrop ?? item.backdrop
   const tmdbRating = data?.tmdbRating ?? item.rating

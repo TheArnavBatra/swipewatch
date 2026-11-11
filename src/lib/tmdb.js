@@ -24,31 +24,37 @@ export function shuffle(list) {
   return a
 }
 
-async function discover(provider, lang, page, minVotes, genres) {
+// extra holds any more TMDB filters to add, as { parameter: value }. A null lang means any language.
+export async function discover(provider, lang, page, minVotes, extra) {
   const params = new URLSearchParams({
     api_key: KEY,
     watch_region: REGION,
     with_watch_providers: String(provider.tmdbId),
     with_watch_monetization_types: 'flatrate',
-    with_original_language: lang,
+    ...(lang && { with_original_language: lang }),
     sort_by: 'popularity.desc',
     'vote_count.gte': String(minVotes),
     include_adult: 'false',
     page: String(page),
   })
-  if (genres) params.set('with_genres', genres)
+  for (const [name, value] of Object.entries(extra ?? {})) if (value != null && value !== '') params.set(name, String(value))
   const res = await fetch(`${API}/discover/movie?${params}`)
   if (!res.ok) throw new Error(`TMDB responded ${res.status}`)
   const data = await res.json()
   return { results: data.results, totalPages: data.total_pages }
 }
 
-function toTitle(m, provider, lang) {
+// why is a one-line reason to show on the card, for titles found through an AI-suggested search.
+export function toTitle(m, provider, lang, why) {
+  // The film's own language, which is what the search asked for unless it asked for any language.
+  const code = m.original_language || lang || 'en'
   return {
     id: String(m.id),
     title: m.title,
     year: m.release_date ? Number(m.release_date.slice(0, 4)) : null,
-    ind: lang === 'hi' ? 'bollywood' : 'hollywood',
+    lang: code,
+    // Hindi and English keep their old names here, so saved titles and the taste model still line up.
+    ind: code === 'hi' ? 'bollywood' : code === 'en' ? 'hollywood' : code,
     svcs: [provider.id],
     genre: GENRES[m.genre_ids?.[0]] ?? 'Film',
     genreIds: m.genre_ids ?? [],
@@ -56,17 +62,19 @@ function toTitle(m, provider, lang) {
     poster: posterUrl(m.poster_path),
     backdrop: backdropUrl(m.backdrop_path),
     rating: m.vote_average ? Math.round(m.vote_average * 10) / 10 : null,
+    ...(why && { why }),
   }
 }
 
-const newCursor = (c, genres) => ({ ...c, genres, visited: new Set(), totalPages: null })
-const pageLimit = (c) => Math.min(c.totalPages ?? MAX_PAGES, MAX_PAGES)
+// opts can cap a cursor at a few pages (maxPages) and have it read them in order (ordered).
+const newCursor = (c, extra = null, opts = {}) => ({ ...c, extra, ...opts, visited: new Set(), totalPages: null })
+const pageLimit = (c) => Math.min(c.totalPages ?? MAX_PAGES, c.maxPages ?? MAX_PAGES)
 const isOpen = (c) => c.totalPages === null || c.visited.size < pageLimit(c)
 
 // The first page is a random one near the top, since the page count is not known yet. It is never
 // the same page this list opened on last time, so two sessions in a row do not start alike.
 function firstPage(c) {
-  const key = `${c.provider.id}:${c.lang}:${c.genres ?? ''}`
+  const key = `${c.provider.id}:${c.lang}:${JSON.stringify(c.extra ?? '')}`
   const seen = load('rp.firstPages', {})
   const options = Array.from({ length: FIRST_PAGE_RANGE }, (_, i) => i + 1).filter((p) => p !== seen[key])
   const page = options[Math.floor(Math.random() * options.length)]
@@ -76,6 +84,8 @@ function firstPage(c) {
 
 // After that, an unvisited page is drawn with a weight that falls off with its rank.
 function nextPage(c) {
+  // A capped cursor only wants the top of its list, so it reads its few pages in order.
+  if (c.ordered) for (let p = 1; p <= pageLimit(c); p++) if (!c.visited.has(p)) return p
   if (c.totalPages === null) return firstPage(c)
   const pages = []
   for (let p = 1; p <= pageLimit(c); p++) if (!c.visited.has(p)) pages.push(p)
@@ -91,7 +101,7 @@ function nextPage(c) {
 // A feed hands out titles in batches. Each next() call pulls one more page per service and
 // language, so the deck can keep refilling until TMDB has nothing left. A title is only ever
 // returned once, and a film found on two services in the same batch shows both.
-export function createFeed({ services, ind, exclude = [], minVotes = 100, favoriteGenres = () => [] }) {
+export function createFeed({ services, ind, exclude = [], minVotes = 100, favoriteGenres = () => [], lanes = () => [] }) {
   const seen = new Set(exclude)
 
   if (!hasTmdb) {
@@ -106,6 +116,7 @@ export function createFeed({ services, ind, exclude = [], minVotes = 100, favori
     .flatMap((provider) => langs.map((lang) => ({ provider, lang })))
   const cursors = base.map((c) => newCursor(c, null))
   const biasedFor = new Set()
+  const laneKeys = new Set()
 
   return {
     hasMore: () => cursors.some(isOpen),
@@ -115,34 +126,136 @@ export function createFeed({ services, ind, exclude = [], minVotes = 100, favori
       const favorites = favoriteGenres().join('|')
       if (favorites && !biasedFor.has(favorites)) {
         biasedFor.add(favorites)
-        cursors.push(...base.map((c) => newCursor(c, favorites)))
+        cursors.push(...base.map((c) => newCursor(c, { with_genres: favorites })))
+      }
+      // Lanes are searches the AI suggested after reading their choices. Each opens a couple of
+      // pages of its own, and every title it finds carries the lane's one-line reason.
+      for (const lane of lanes()) {
+        const key = JSON.stringify(lane)
+        if (laneKeys.has(key)) continue
+        laneKeys.add(key)
+        try {
+          // A lane with two genres means the blend of both.
+          const { spec } = await resolve({ ...lane, allGenres: true, anyActor: true })
+          const extra = filterParams(spec)
+          const own = base.filter((c) => !lane.language || c.lang === lane.language)
+          cursors.push(...own.map((c) => newCursor(c, extra, { why: lane.reason, maxPages: 2, ordered: true })))
+        } catch {
+          // A lane that cannot be set up is skipped; it must never end the feed.
+        }
       }
       const batches = await Promise.all(cursors.filter(isOpen).map(async (c) => {
         // A random first page can be past the end for a small catalog, so try again with the real count.
         for (let attempt = 0; attempt < 3 && isOpen(c); attempt++) {
           const page = nextPage(c)
           c.visited.add(page)
-          const { results, totalPages } = await discover(c.provider, c.lang, page, minVotes, c.genres)
+          const { results, totalPages } = await discover(c.provider, c.lang, page, minVotes, c.extra)
           c.totalPages = totalPages
-          if (results.length) return results.map((m) => ({ m, provider: c.provider, lang: c.lang }))
+          if (results.length) return results.map((m) => ({ m, provider: c.provider, lang: c.lang, why: c.why }))
         }
         return []
       }))
 
       const batch = new Map()
-      for (const { m, provider, lang } of batches.flat()) {
+      for (const { m, provider, lang, why } of batches.flat()) {
         const id = String(m.id)
         const existing = batch.get(id)
         if (existing) {
           if (!existing.svcs.includes(provider.id)) existing.svcs.push(provider.id)
+          if (why && !existing.why) existing.why = why
         } else if (!seen.has(id)) {
-          batch.set(id, toTitle(m, provider, lang))
+          batch.set(id, toTitle(m, provider, lang, why))
         }
       }
       for (const id of batch.keys()) seen.add(id)
       return shuffle([...batch.values()])
     },
   }
+}
+
+const peopleCache = new Map()
+
+// A person is looked up by name once, and the best match is used: an actor or a director, as asked.
+function personId(name, department) {
+  const key = `${department}:${name.toLowerCase()}`
+  if (!peopleCache.has(key)) {
+    const params = new URLSearchParams({ api_key: KEY, query: name, include_adult: 'false' })
+    peopleCache.set(key, fetch(`${API}/search/person?${params}`)
+      .then((res) => (res.ok ? res.json() : { results: [] }))
+      .then((data) => (data.results.find((p) => p.known_for_department === department) ?? data.results[0])?.id ?? null)
+      .catch(() => null))
+  }
+  return peopleCache.get(key)
+}
+
+const keywordCache = new Map()
+// TMDB files some subjects under another name than people use for them.
+const KEYWORD_ALIAS = {
+  'true story': 'based on true story', 'based on a true story': 'based on true story', 'true events': 'based on true story',
+  biopic: 'biography', sport: 'sports', 'sci fi': 'science fiction', ai: 'artificial intelligence', soccer: 'football',
+  'world war 2': 'world war ii', ww2: 'world war ii', aliens: 'alien', zombies: 'zombie', vampires: 'vampire',
+}
+const plain = (s) => s.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
+
+// A theme is looked up as a TMDB keyword. Only an exact name counts, or the same name with a note
+// in brackets ("football (soccer)"); a loose match would search for something they did not ask for.
+function keywordId(theme) {
+  const asked = plain(theme)
+  const query = KEYWORD_ALIAS[asked] ?? asked
+  if (!keywordCache.has(query)) {
+    const params = new URLSearchParams({ api_key: KEY, query })
+    const request = fetch(`${API}/search/keyword?${params}`)
+      .then((res) => { if (!res.ok) throw new Error(`TMDB responded ${res.status}`); return res.json() })
+      .then((data) => {
+        const all = data.results ?? []
+        return (all.find((k) => plain(k.name) === query) ?? all.find((k) => plain(k.name).startsWith(`${query} (`)))?.id ?? null
+      })
+    request.catch(() => keywordCache.delete(query))
+    keywordCache.set(query, request)
+  }
+  return keywordCache.get(query)
+}
+
+// Turns names into TMDB ids: actors, directors and themes. missing lists whatever could not be
+// found, so the caller can say so instead of quietly searching without it.
+export async function resolve(intent) {
+  const actors = intent.actors ?? []
+  const directors = intent.directors ?? []
+  const themes = intent.themes ?? []
+  const [cast, crew, keywords] = await Promise.all([
+    Promise.all(actors.map((n) => personId(n, 'Acting'))),
+    Promise.all(directors.map((n) => personId(n, 'Directing'))),
+    Promise.all(themes.map((t) => keywordId(t).catch(() => null))),
+  ])
+  const missing = [
+    ...actors.filter((_, i) => !cast[i]).map((name) => ({ kind: 'person', name })),
+    ...directors.filter((_, i) => !crew[i]).map((name) => ({ kind: 'person', name })),
+    ...themes.filter((_, i) => !keywords[i]).map((name) => ({ kind: 'theme', name })),
+  ]
+  const spec = {
+    genres: intent.genres ?? [], allGenres: Boolean(intent.allGenres), avoidGenres: intent.avoidGenres ?? [],
+    minRating: intent.minRating ?? null, yearFrom: intent.yearFrom ?? null, yearTo: intent.yearTo ?? null,
+    minRuntime: intent.minRuntime ?? null, maxRuntime: intent.maxRuntime ?? null,
+    cast: cast.filter(Boolean), anyActor: Boolean(intent.anyActor), crew: crew.filter(Boolean),
+    keywords: keywords.filter(Boolean), anyTheme: false,
+  }
+  return { spec, missing }
+}
+
+// A resolved search as TMDB discover parameters. In TMDB a comma means "all of" and a pipe "any of".
+export function filterParams(spec) {
+  const p = {}
+  if (spec.genres.length) p.with_genres = spec.genres.join(spec.allGenres ? ',' : '|')
+  if (spec.avoidGenres.length) p.without_genres = spec.avoidGenres.join('|')
+  if (spec.minRating) p['vote_average.gte'] = spec.minRating
+  if (spec.yearFrom) p['primary_release_date.gte'] = `${spec.yearFrom}-01-01`
+  if (spec.yearTo) p['primary_release_date.lte'] = `${spec.yearTo}-12-31`
+  if (spec.minRuntime) p['with_runtime.gte'] = spec.minRuntime
+  if (spec.maxRuntime) p['with_runtime.lte'] = spec.maxRuntime
+  if (spec.cast.length) p.with_cast = spec.cast.join(spec.anyActor ? '|' : ',')
+  if (spec.crew.length) p.with_crew = spec.crew.join('|')
+  if (spec.keywords.length) p.with_keywords = spec.keywords.join(spec.anyTheme ? '|' : ',')
+  return p
 }
 
 const OMDB_KEY = import.meta.env.VITE_OMDB_KEY
@@ -190,6 +303,7 @@ async function loadDetails(item) {
     genres: (d.genres ?? []).map((g) => g.name),
     overview: d.overview || null,
     languages: (d.spoken_languages ?? []).map((l) => l.english_name),
+    originalLanguage: d.original_language || null,
     countries: (d.production_countries ?? []).map((c) => c.name),
     director: (d.credits?.crew ?? []).filter((c) => c.job === 'Director').map((c) => c.name),
     cast: (d.credits?.cast ?? []).slice(0, 8).map((c) => ({
